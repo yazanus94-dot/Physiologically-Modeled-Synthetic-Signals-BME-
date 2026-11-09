@@ -75,6 +75,10 @@ python run_comparison.py
 
 The ECG arrhythmia and PPG/HRV READMEs describe their respective pipelines, but their Python source files and project-specific dependency files are not currently included in this repository. They are documented for reference and are not yet independently runnable from this repository.
 
+## Project Demonstration
+
+[Watch the project demonstration video](https://github.com/user-attachments/assets/77b5a51c-06c4-42c3-877c-01ff2aac55a2)
+
 ## References
 
 - [NumPy documentation](https://numpy.org/doc/stable/)
