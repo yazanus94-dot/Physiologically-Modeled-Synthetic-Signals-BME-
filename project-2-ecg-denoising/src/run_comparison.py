@@ -2,7 +2,7 @@
 Compares denoising methods against a known-clean synthetic ECG reference,
 reports SNR improvement + RMSE per method, and plots the results.
 
-Run: python src/run_comparison.py
+Run:  cd src && python run_comparison.py
 Output goes to ./outputs/
 """
 import json

@@ -29,7 +29,8 @@ Challenge, and no claim is made otherwise.
 
 1. **Signal generation** (`generate_signal.py`) — 10 minutes of synthetic
    ECG at 250 Hz, with randomly interspersed Normal (N), PVC (V), and
-   supraventricular/other (S) beats, each with distinct morphology.
+   supraventricular/other (S) beats, each with distinct morphology,
+   premature timing for V/S beats, and a compensatory pause after PVCs.
 2. **R-peak detection** (`detect_rpeaks.py`) — a Pan-Tompkins-style
    detector implemented from scratch with `scipy`: bandpass filter →
    derivative → squaring → moving-window integration → adaptive
@@ -43,23 +44,6 @@ Challenge, and no claim is made otherwise.
    held-out test split with a full classification report and confusion
    matrix.
 
-## Results (this run, synthetic data)
-
-- R-peak detector: **92.0% sensitivity, 100% precision** vs. ground truth
-  (tolerance ±50 ms) — realistic for a from-scratch detector; it is not
-  tuned to be artificially perfect.
-- Beat classifier: near-perfect on held-out synthetic beats. This is
-  expected and **not claimed as real-world performance** — the synthetic
-  morphologies are more cleanly separable by construction than real,
-  noisy clinical ECG, where normal/ectopic beats and inter-patient
-  variability make this a genuinely harder problem. On real MIT-BIH data,
-  published inter-patient beat classifiers typically score well below
-  this.
-
-See `outputs/metrics.json` for the full numeric report and
-`outputs/*.png` for the plots (ECG strip with detected peaks, confusion
-matrix, feature importance).
-
 ## Run it
 
 ```bash
@@ -70,10 +54,42 @@ python run_pipeline.py
 
 Output (metrics + plots) is written to `outputs/`.
 
+## Results (this run, synthetic data)
+
+Numbers are regenerated live by the pipeline — `outputs/metrics.json`
+is the authoritative record of every run. Current build (seed 42, 10 min
+of 250 Hz synthetic ECG, 739 beats: N=535, V=97, S=107, noise: baseline
+wander + 50 Hz powerline + EMG):
+
+- R-peak detector: **100.0% sensitivity, 100.0% precision** vs. ground
+  truth (tolerance ±50 ms)
+- Random Forest beat classifier: 1.00 accuracy / 1.00 F1 for N, V and S
+  on the held-out split
+
+This is expected and **not claimed as real-world performance** — the
+synthetic morphologies are more cleanly separable by construction than
+real, noisy clinical ECG, where normal/ectopic beats and inter-patient
+variability make this a genuinely harder problem. On real MIT-BIH data,
+published inter-patient beat classifiers typically score well below
+this.
+
+**Documented engineering decision:** the classic Pan-Tompkins passband
+(~5–15 Hz) attenuates the deliberately wide PVC morphology so badly that
+every PVC was missed in early versions of this build; the band was
+widened to 2–15 Hz, which was validated on eight independent generator
+seeds. Keeping the stricter band would have produced a "more honest"
+~85% detector — but a detector that misses a whole arrhythmia class
+cannot honestly support the classification stage, so the widened band
+was adopted.
+
+See `outputs/metrics.json` for the full numeric report and
+`outputs/*.png` for the plots (ECG strip with detected peaks, confusion
+matrix, feature importance).
+
 ## Project structure
 
 ```
-proj1_ecg_arrhythmia/
+project-1-ecg-arrhythmia/
 ├── README.md
 ├── requirements.txt
 ├── src/
@@ -81,6 +97,7 @@ proj1_ecg_arrhythmia/
 │   ├── detect_rpeaks.py     # from-scratch Pan-Tompkins-style R-peak detector
 │   ├── features.py          # beat-level feature extraction
 │   └── run_pipeline.py      # end-to-end: generate -> detect -> extract -> classify
+├── tests/
+│   └── test_pipeline.py     # fast unit tests of the core pieces
 └── outputs/                 # generated on run: metrics.json + plots
 ```
-

@@ -40,31 +40,6 @@ different loader.
    peak detection against ground truth, and compares HRV metrics computed
    from detected peaks vs. ground-truth peaks.
 
-## Results (this run)
-
-- Peak detector: **99.5% sensitivity, 98.5% precision** vs. ground truth
-  (tolerance ±150 ms).
-- HRV metrics, detected vs. reference:
-
-  | Metric | Reference | Detected |
-  |---|---:|---:|
-  | Mean HR (bpm) | 67.9 | 68.6 |
-  | SDNN (ms) | 58.4 | 82.1 |
-  | RMSSD (ms) | 75.3 | 95.5 |
-
-The detected SDNN/RMSSD are visibly inflated relative to ground truth —
-and the tachogram plot (`outputs/rr_tachogram.png`) shows exactly why:
-two motion-artifact bursts produce brief spurious interval spikes that
-the plausibility filter doesn't fully catch, which HRV metrics (RMSSD
-especially) are very sensitive to. This is included deliberately rather
-than tuned away, because it's a realistic and well-known failure mode of
-PPG-based HRV in the wearables literature (motion artifact is the
-dominant PPG HRV error source), and a peak detector that silently
-produces clean-looking but wrong HRV numbers would be a worse
-demonstration than one that shows, and explains, its own error mode.
-
-Full numbers in `outputs/metrics.json`.
-
 ## Run it
 
 ```bash
@@ -75,10 +50,47 @@ python run_pipeline.py
 
 Output (metrics + plots) is written to `outputs/`.
 
+## Results (this run)
+
+Numbers are regenerated live by the pipeline — `outputs/metrics.json`
+is the authoritative record of every run. Current build (seed 7, 3 min
+of 100 Hz synthetic PPG, 205 beats, 0.25 Hz RSA-modulated HRV, 3
+motion-artifact bursts):
+
+- Peak detector: **99.5% sensitivity, 100.0% precision** vs. ground
+  truth (tolerance ±150 ms) — a single missed beat near an artifact burst.
+- HRV metrics, detected vs reference (close agreement despite the one
+  artifact-region miss):
+
+  | Metric | Reference | Detected |
+  |---|---:|---:|
+  | Mean HR (bpm) | 68.37 | 68.37 |
+  | SDNN (ms) | 62.32 | 59.55 |
+  | RMSSD (ms) | 79.73 | 76.32 |
+  | pNN50 (%) | 67.49 | 64.85 |
+
+- Frequency domain: essentially all heart-rate power sits in the HF band
+  (the simulated respiration is at 0.25 Hz, which falls inside the
+  0.15–0.40 Hz HF band by definition), so the LF band — which in real
+  recordings also carries baroreflex-mediated activity this generator
+  does not model — is tiny, and the LF/HF ratio is correspondingly low.
+
+Motion artifact remains the known dominant error mode of PPG-based HRV
+in the wearables literature: in runs where an artifact bumps the
+adaptive threshold, a missed detection or brief spurious interval
+inflates RMSSD/SDNN sharply, exactly the failure mode real devices
+must handle. The current artifact parameters happen to be handled
+cleanly by the height threshold + plausibility filter (with one
+boundary miss), so the run stays close to the reference — but the
+tachogram plot (`outputs/rr_tachogram.png`) still marks the artifact
+regions where that agreement is most fragile.
+
+Full numbers in `outputs/metrics.json`.
+
 ## Project structure
 
 ```
-proj3_ppg_hrv/
+project-3-ppg-hrv/
 ├── README.md
 ├── requirements.txt
 ├── src/
@@ -86,5 +98,7 @@ proj3_ppg_hrv/
 │   ├── peak_detect.py      # from-scratch systolic peak detector
 │   ├── hrv_metrics.py      # time-domain + frequency-domain HRV metrics
 │   └── run_pipeline.py     # end-to-end: generate -> detect -> score -> HRV -> plots
+├── tests/
+│   └── test_pipeline.py    # fast unit tests of the core pieces
 └── outputs/                # generated on run: metrics.json + plots
 ```

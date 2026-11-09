@@ -1,0 +1,39 @@
+{
+  "peak_detection": {
+    "sensitivity": 0.9951,
+    "precision": 1.0,
+    "tp": 204,
+    "fp": 0,
+    "fn": 1
+  },
+  "n_true_peaks": 205,
+  "n_detected_peaks": 204,
+  "hrv_reference": {
+    "time": {
+      "mean_hr_bpm": 68.37,
+      "sdnn_ms": 62.32,
+      "rmssd_ms": 79.73,
+      "pnn50_pct": 67.49
+    },
+    "freq": {
+      "vlf_power": 0.564,
+      "lf_power": 2.48,
+      "hf_power": 3770.086,
+      "lf_hf_ratio": 0.001
+    }
+  },
+  "hrv_detected": {
+    "time": {
+      "mean_hr_bpm": 68.37,
+      "sdnn_ms": 59.55,
+      "rmssd_ms": 76.32,
+      "pnn50_pct": 64.85
+    },
+    "freq": {
+      "vlf_power": 0.544,
+      "lf_power": 2.73,
+      "hf_power": 3454.253,
+      "lf_hf_ratio": 0.001
+    }
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "raw_noisy": {
+    "snr_db": -0.845,
+    "snr_improvement_db": 0.0,
+    "rmse": 0.21443
+  },
+  "median_filter_baseline_removal": {
+    "snr_db": 5.977,
+    "snr_improvement_db": 6.822,
+    "rmse": 0.09776
+  },
+  "bandpass_0.5_40hz": {
+    "snr_db": 6.32,
+    "snr_improvement_db": 7.165,
+    "rmse": 0.09398
+  },
+  "notch_50hz": {
+    "snr_db": -0.518,
+    "snr_improvement_db": 0.326,
+    "rmse": 0.20652
+  },
+  "fft_soft_threshold": {
+    "snr_db": 4.357,
+    "snr_improvement_db": 5.202,
+    "rmse": 0.11781
+  },
+  "combined_pipeline": {
+    "snr_db": 6.145,
+    "snr_improvement_db": 6.99,
+    "rmse": 0.09589
+  }
+}

@@ -1,0 +1,81 @@
+{
+  "n_beats": 739,
+  "beat_counts": {
+    "N": 535,
+    "V": 97,
+    "S": 107
+  },
+  "r_peak_detection": {
+    "sensitivity": 1.0,
+    "precision": 1.0,
+    "tp": 739,
+    "fp": 0,
+    "fn": 0
+  },
+  "classification_report": {
+    "N": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 161.0
+    },
+    "S": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 32.0
+    },
+    "V": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 29.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 222.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 222.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      161,
+      0,
+      0
+    ],
+    [
+      0,
+      29,
+      0
+    ],
+    [
+      0,
+      0,
+      32
+    ]
+  ],
+  "feature_names": [
+    "rr_prev",
+    "rr_next",
+    "rr_ratio",
+    "qrs_amp",
+    "qrs_width",
+    "qrs_energy"
+  ],
+  "feature_importances": {
+    "rr_prev": 0.0096,
+    "rr_next": 0.4424,
+    "rr_ratio": 0.1349,
+    "qrs_amp": 0.1533,
+    "qrs_width": 0.1755,
+    "qrs_energy": 0.0843
+  }
+}
