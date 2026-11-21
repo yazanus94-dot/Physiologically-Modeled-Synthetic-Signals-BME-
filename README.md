@@ -7,54 +7,77 @@ processing with Python:
 
 1. **ECG arrhythmia beat classification** — synthetic ECG generating
    Normal / PVC / Supraventricular beats, a from-scratch Pan-Tompkins-style
-   R-peak detector, beat-level feature extraction, and a Random Forest
-   classifier.
+   R-peak detector, beat-level feature extraction, and Random Forest /
+   Logistic Regression classifiers — plus the same pipeline run on the
+   **real MIT-BIH Arrhythmia Database**.
 2. **ECG denoising pipeline comparison** — objective scoring (SNR
-   improvement, RMSE) of five denoising strategies on an ECG corrupted
-   with known noise sources.
+   improvement, RMSE) of five denoising strategies on a synthetic ECG
+   corrupted with known noise sources — plus the same methods scored on
+   the **real PhysioNet Noise Stress Test Database**, where real recorded
+   noise is mixed into real ECG at exact target SNRs.
 3. **PPG-based heart rate variability (HRV) analysis** — synthetic PPG
    with respiratory-sinus-arrhythmia-driven HRV, systolic peak detection,
-   and time- and frequency-domain HRV estimation.
+   and time- and frequency-domain HRV estimation — plus the same pipeline
+   run on the **real BIDMC PPG and Respiration Dataset**, comparing
+   ECG-derived HRV against PPG-derived PRV.
 
-All data is **synthetic and seeded** — the signals were generated, not
-recorded, which is disclosed in every project README along with the
-reason (no internet access to PhysioNet) and the exact swap-in path for
-real recordings. The honest consequence: every reported number describes
-performance on this synthetic dataset, not real clinical performance.
+Every project keeps its synthetic and real results **separate and
+labelled**. Synthetic numbers come from seeded generators; real numbers
+come from downloaded PhysioNet recordings. They are never blended into a
+single figure, and neither is presented as clinical performance.
+
+**Downloaded PhysioNet data is never committed** — `data/` is git-ignored.
+Each project documents how to re-download it.
 
 ## 📂 Repository structure
 
 ```
 Physiologically-Modeled-Synthetic-Signals-BME-/
-├── project-1-ecg-arrhythmia/      # ECG beat classification (RF + PT detector)
+├── project-1-ecg-arrhythmia/      # ECG beat classification (RF + LR + PT detector)
 ├── project-2-ecg-denoising/       # denoising method comparison
 ├── project-3-ppg-hrv/             # PPG peak detection + HRV metrics
 ├── .github/workflows/ci.yml       # CI: runs every project's test suite
-├── requirements.txt               # top-level dependency set
+├── requirements.txt               # top-level dependency set (installs all three)
 └── README.md
 ```
 
 Each project folder is self-contained:
 
-| Folder | Focus | Key techniques |
-|---|---|---|
-| `project-1-ecg-arrhythmia/` | ECG beat classification | sum-of-Gaussians generator, Pan-Tompkins-style detector, RR/QRS features, Random Forest |
-| `project-2-ecg-denoising/` | denoising comparison | median baseline removal, Butterworth bandpass, notch, FFT soft-threshold, combined chain |
-| `project-3-ppg-hrv/` | PPG-based HRV | RSA-modulated generator, adaptive peak detection, SDNN/RMSSD/pNN50, Welch LF/HF |
+| Folder | Focus | Synthetic | Real (PhysioNet) |
+|---|---|---|---|
+| `project-1-ecg-arrhythmia/` | ECG beat classification | sum-of-Gaussians generator, Pan-Tompkins-style detector, RR/QRS features, RF + LR | MIT-BIH Arrhythmia Database (48 records) — DS1/DS2 split + leakage-audited split, R-peak scoring |
+| `project-2-ecg-denoising/` | denoising comparison | median baseline removal, Butterworth bandpass, notch, FFT soft-threshold, combined chain | MIT-BIH Noise Stress Test Database — real noise mixed into real ECG at exact SNRs |
+| `project-3-ppg-hrv/` | PPG-based HRV | RSA-modulated generator, adaptive peak detection, SDNN/RMSSD/pNN50, Welch LF/HF | BIDMC PPG + Respiration Dataset — ECG-derived HRV vs PPG-derived PRV |
 
-## 📊 Headline results (synthetic data, regenerated live by each pipeline)
+## 📊 Headline results (all measured by the runs in this repository)
+
+### Synthetic (seeded, regenerated live by each pipeline)
 
 | Project | Metric | Result |
 |---|---|---|
 | 1 | R-peak detection (±50 ms) | 100.0% sensitivity / 100.0% precision |
 | 1 | N/V/S beat classification | 1.00 accuracy (held-out split) |
-| 2 | best denoising step | +7.2 dB SNR improvement (Butterworth 0.5–40 Hz) |
+| 2 | best denoising step | +16.34 dB SNR improvement (Butterworth 0.5–40 Hz) |
 | 3 | peak detection (±150 ms) | 99.5% sensitivity / 100.0% precision |
-| 3 | HRV agreement | SDNN/RMSSD within ~5% of reference |
+
+### Real PhysioNet data
+
+| Project | Dataset | Metric | Result |
+|---|---|---|---|
+| 1 | MIT-BIH (44 records) | R-peak detection (±50 ms, one-to-one) | sens 0.9434 / prec 0.9560 / F1 0.9497, mean timing error 3.79 ms |
+| 1 | MIT-BIH, classic DS1/DS2 | beat classification (Logistic Regression) | balanced acc. 0.7063, macro-F1 0.5581 |
+| 1 | MIT-BIH, leakage-audited | beat classification (Logistic Regression) | balanced acc. 0.7081, macro-F1 0.5689 |
+| 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at −6 dB | **+8.42 dB** (combined pipeline +10.70 dB) |
+| 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at +24 dB | **−7.58 dB** (filtering an already-clean signal costs more than it gains) |
+| 3 | BIDMC (3 records) | mean HR difference, HRV vs PRV | **−0.40 %**, beat agreement 97.4 % |
+| 3 | BIDMC (3 records) | SDNN / RMSSD / LF-HF difference | 57.99 % / 69.37 % / 506.50 % (reported as a finding, not smoothed away) |
 
 **Read the caveats in each project README** — why these numbers must not
-be read as clinical performance, and which failure modes were kept in
-the results deliberately.
+be read as clinical performance, and which failure modes are kept in the
+results deliberately. In particular, Project 1's synthetic 1.00
+classification accuracy versus its real balanced accuracy of ~0.71 is the
+honest distance between a clean generator and patient-independent
+classification on real ECG.
 
 ## 🚀 How to run
 
@@ -66,21 +89,41 @@ python -m venv .venv
 .venv\Scripts\activate            # Windows  (macOS/Linux: source .venv/bin/activate)
 pip install -r requirements.txt
 
-# Project 1
-cd project-1-ecg-arrhythmia/src && python run_pipeline.py && cd ../..
+# --- synthetic pipelines ---
+cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode synthetic && cd ../..
+cd project-2-ecg-denoising/src  && python run_comparison.py            && cd ../..
+cd project-3-ppg-hrv/src        && python run_pipeline.py              && cd ../..
 
-# Project 2
-cd project-2-ecg-denoising/src && python run_comparison.py && cd ../..
+# --- real PhysioNet pipelines (download data on first run) ---
+cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protocol classic         && cd ../..
+cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protocol leakage_audited && cd ../..
+cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode rpeaks                            && cd ../..
+cd project-2-ecg-denoising/src  && python run_real_experiment.py --download                        && cd ../..
+cd project-3-ppg-hrv/src        && python run_bidmc_experiment.py --download                       && cd ../..
 
-# Project 3
-cd project-3-ppg-hrv/src && python run_pipeline.py && cd ..
-
-# tests
+# tests (189 total: 136 + 24 + 29)
 pytest project-1-ecg-arrhythmia/tests project-2-ecg-denoising/tests project-3-ppg-hrv/tests
 ```
 
-Every pipeline writes its metrics (`metrics.json`) and plots (`*.png`)
-to its own `outputs/` folder.
+Every pipeline writes its metrics (`metrics.json` / `*.csv`) and plots
+(`*.png`) to its own `outputs/` folder. CI runs the same three test
+suites on Python 3.12.
+
+## 📚 Datasets
+
+Real data is downloaded from PhysioNet and **not** committed:
+
+- **MIT-BIH Arrhythmia Database** — Moody, G., & Mark, R. (2005).
+  *MIT-BIH Arrhythmia Database* (v1.0.0). PhysioNet.
+  https://doi.org/10.13026/C2F305
+- **MIT-BIH Noise Stress Test Database** — Moody, G. B., Muldrow, W. E.,
+  & Mark, R. G. (1984). A noise stress test for arrhythmia detectors.
+  *Computers in Cardiology*, 11, 381–384.
+  https://doi.org/10.13026/C2HS3T
+- **BIDMC PPG and Respiration Dataset** — Pimentel, M. A. F., et al.
+  (2018). *BIDMC PPG and Respiration Dataset* (v1.0.0). PhysioNet.
+  https://doi.org/10.13026/C2208R · original paper: Pimentel et al.
+  (2016), *IEEE TBME*, 64(8), 1914–1923.
 
 ## 🎓 What it demonstrates
 
@@ -90,9 +133,12 @@ to its own `outputs/` folder.
 - Digital filtering designed per artifact type, not by trial and error
 - Feature engineering driven by physiology (RR prematurity patterns,
   QRS width/energy for the wide PVC morphology)
-- Honest evaluation on synthetic data: known ground truth enables
-  objective detection/classification scoring and the documented limits
-  of what that can and cannot establish
+- Reproducible real-data evaluation: patient-level train/test splits with
+  a same-subject leakage audit (records 201/202), one-to-one peak matching
+  at fixed tolerance, and explicitly reported artifact-rejection counts
+- Honest evaluation: synthetic numbers labelled as synthetic, real numbers
+  labelled as real, failure cases and negative results left in, and the
+  documented limits of what each can and cannot establish
 
 ## 👨‍💻 About
 

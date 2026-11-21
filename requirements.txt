@@ -1,5 +1,21 @@
+# Root dependencies for the whole repository.
+# Installing this single file is sufficient to run all three projects
+# (synthetic and real PhysioNet pipelines) plus the full test suite.
+
+# Core scientific stack
 numpy>=1.24
 scipy>=1.10
 matplotlib>=3.7
+
+# Machine learning (Project 1: Random Forest / Logistic Regression)
 scikit-learn>=1.3
+joblib>=1.3
+
+# Real PhysioNet data loading (wfdb): MIT-BIH, NSTDB, BIDMC
+wfdb>=4.0
+
+# Plotting
+seaborn>=0.12
+
+# Testing
 pytest>=7.0

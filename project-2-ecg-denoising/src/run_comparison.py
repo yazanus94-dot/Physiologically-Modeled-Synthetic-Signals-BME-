@@ -13,6 +13,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+from evaluate_denoising import _zero_mean
 from generate_noisy_signal import make_clean_and_noisy
 from denoise_methods import (
     median_filter_baseline_removal, bandpass_filter, notch_filter,
@@ -48,12 +49,18 @@ def main():
 
     print("3. Scoring each method against the clean reference (SNR, RMSE)...")
     results = {}
-    baseline_snr = snr_db(clean, noisy)
+    # DC-removed convention (see evaluate_denoising._zero_mean): a filter
+    # that legitimately removes the baseline offset must not be penalised
+    # for it, and the baseline must use the same convention as the outputs.
+    clean_z = _zero_mean(clean)
+    noisy_z = _zero_mean(noisy)
+    baseline_snr = snr_db(clean_z, noisy_z)
     for name, est in methods.items():
+        est_z = _zero_mean(est)
         results[name] = {
-            "snr_db": round(snr_db(clean, est), 3),
-            "snr_improvement_db": round(snr_db(clean, est) - baseline_snr, 3),
-            "rmse": round(rmse(clean, est), 5),
+            "snr_db": round(snr_db(clean_z, est_z), 3),
+            "snr_improvement_db": round(snr_db(clean_z, est_z) - baseline_snr, 3),
+            "rmse": round(rmse(clean_z, est_z), 5),
         }
         print(f"   {name:32s}  SNR={results[name]['snr_db']:7.3f} dB "
               f"(+{results[name]['snr_improvement_db']:6.3f} dB)   RMSE={results[name]['rmse']:.5f}")

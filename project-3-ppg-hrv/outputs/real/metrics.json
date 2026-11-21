@@ -1,0 +1,1174 @@
+{
+  "experiment": "bidmc_hrv_prv",
+  "dataset": "BIDMC PPG and Respiration Dataset (PhysioNet)",
+  "data_dir": "C:\\Users\\Souq AL_Bostan\\Projects\\chart-reasoning-fix\\Physiologically-Modeled-Synthetic-Signals-BME-\\data\\physionet\\bidmc",
+  "definitions": {
+    "ecg_hrv": "heart-rate variability computed from ECG R-R intervals (WFDB XQRS detector)",
+    "ppg_prv": "pulse-rate variability computed from PPG pulse-to-pulse intervals"
+  },
+  "records": [
+    {
+      "record": "bidmc01",
+      "fs": 125.0,
+      "duration_s": 480.008,
+      "warnings": [
+        "numerics pulse: 13 NaN / 0 inf (before sentinel masking)",
+        "numerics spo2: 13 NaN / 0 inf (before sentinel masking)"
+      ],
+      "ppg_channel": "PLETH",
+      "ecg_channel": "II",
+      "preprocessing": {
+        "clean": {
+          "n_samples": 60001,
+          "duration_s": 480.008,
+          "n_nan": 0,
+          "n_inf": 0,
+          "n_finite": 60001,
+          "frac_invalid": 0.0,
+          "all_invalid": false,
+          "repaired": true,
+          "n_interpolated": 0
+        },
+        "band_hz": [
+          0.5,
+          8.0
+        ],
+        "order": 4,
+        "zero_phase": true
+      },
+      "quality": {
+        "validation": {
+          "n_samples": 60001,
+          "duration_s": 480.008,
+          "n_nan": 0,
+          "n_inf": 0,
+          "n_finite": 60001,
+          "frac_invalid": 0.0,
+          "all_invalid": false
+        },
+        "metrics": {
+          "robust_amplitude": 0.22775899156551227,
+          "span": 0.47409578989468215,
+          "clipping_fraction": 0.0,
+          "flatline_fraction": 0.0,
+          "baseline_wander_ratio": 0.23260510770319487
+        },
+        "flags": [],
+        "usable": true
+      },
+      "n_ppg_peaks": 711,
+      "n_ecg_rpeaks": 730,
+      "lag_s": 0.5,
+      "interval_artifact_rejection": {
+        "physiological_range_s": [
+          0.3,
+          1.5
+        ],
+        "ecg_rr_kept": 729,
+        "ecg_rr_rejected": 0,
+        "ppg_pi_kept": 709,
+        "ppg_pi_rejected": 1
+      },
+      "ecg_hrv": {
+        "source": "ECG R-R intervals (WFDB XQRS)",
+        "n_intervals_raw": 729,
+        "n_intervals_used": 729,
+        "time_domain": {
+          "mean_hr_bpm": 91.29,
+          "sdnn_ms": 25.78,
+          "rmssd_ms": 41.13,
+          "pnn50_pct": 4.12
+        },
+        "frequency_domain": {
+          "vlf_power": 5.592,
+          "lf_power": 17.558,
+          "hf_power": 196.689,
+          "lf_hf_ratio": 0.089
+        }
+      },
+      "ppg_prv": {
+        "source": "PPG pulse-to-pulse intervals",
+        "n_intervals_raw": 710,
+        "n_intervals_used": 709,
+        "time_domain": {
+          "mean_hr_bpm": 91.15,
+          "sdnn_ms": 31.55,
+          "rmssd_ms": 45.27,
+          "pnn50_pct": 3.39
+        },
+        "frequency_domain": {
+          "vlf_power": 536.734,
+          "lf_power": 635.071,
+          "hf_power": 459.398,
+          "lf_hf_ratio": 1.382
+        }
+      },
+      "hrv_prv_comparison": {
+        "mean_hr_diff_pct": -0.15335743235841884,
+        "sdnn_diff_pct": 22.381691233514353,
+        "rmssd_diff_pct": 10.065645514223196,
+        "pnn50_diff_pct": -17.718446601941746,
+        "lf_hf_ratio_diff_pct": 1452.808988764045,
+        "interval_series_pearson_lag_corrected": 0.5141193101682944,
+        "interval_series_pearson_smoothed_10s": 0.5275270041490449,
+        "lag1_autocorr_ecg_rr": -0.27390410193400405,
+        "lag1_autocorr_ppg_pi": -0.029334031533761372,
+        "agreement": {
+          "agree_pct": 99.71791255289139,
+          "disagree_pct": 0.2820874471086037
+        },
+        "disagreement_counts": {
+          "missed_pulse_suspect": 0,
+          "false_peak_suspect": 0,
+          "ecg_suspect": 0,
+          "uncertain": 2
+        },
+        "lag_s": 0.5
+      },
+      "monitor_numerics": {
+        "mean": {
+          "hr_bpm": 91.32,
+          "pulse_bpm": 91.01
+        },
+        "note": "bedside-monitor algorithm (1 Hz numerics), not manual beat annotations"
+      },
+      "quality_assessment": {
+        "record_name": "bidmc01",
+        "fs": 125.0,
+        "n_peaks": 711,
+        "raw_quality": {
+          "flags": [],
+          "usable": true,
+          "metrics": {
+            "robust_amplitude": 0.22775899156551227,
+            "span": 0.47409578989468215,
+            "clipping_fraction": 0.0,
+            "flatline_fraction": 0.0,
+            "baseline_wander_ratio": 0.23260510770319487
+          }
+        },
+        "motion": {
+          "n_windows": 240,
+          "motion_fraction": 0.0,
+          "motion_windows": [],
+          "median_window_std": 0.06425140729568274,
+          "k": 3.0,
+          "window_s": 2.0
+        },
+        "morphology": {
+          "n_beats": 711,
+          "n_valid": 711,
+          "n_morphology_outliers": 1,
+          "morphology_outlier_fraction": 0.0014064697609001407,
+          "median_correlation": 0.9960280944409873,
+          "amplitude_median": 0.20027337724206462,
+          "amplitude_mad": 0.01210826178785207,
+          "amplitude_robust_cv": 0.06045866881855778,
+          "min_corr": 0.5
+        },
+        "intervals": {
+          "suspect_indices": [
+            67,
+            139
+          ],
+          "reasons": [
+            "missed_pulse_suspect",
+            "implausible_interval"
+          ],
+          "counts": {
+            "invalid_interval": 0,
+            "implausible_interval": 1,
+            "false_peak_suspect": 0,
+            "missed_pulse_suspect": 1
+          },
+          "n_intervals": 710,
+          "median_interval_s": 0.656,
+          "hard_limits_s": [
+            0.3,
+            1.5
+          ]
+        },
+        "ecg_ppg_disagreement": {
+          "lag_s": 0.5,
+          "n_compared": 710,
+          "n_agree": 707,
+          "n_disagree": 3,
+          "counts": {
+            "missed_pulse_suspect": 0,
+            "false_peak_suspect": 0,
+            "ecg_suspect": 0,
+            "uncertain": 3
+          },
+          "records": [
+            {
+              "index": 67,
+              "t_ppg_s": 44.08,
+              "ppg_interval_s": 1.296,
+              "ecg_rr_s": 0.8716097560975575,
+              "diff_s": 0.4243902439024425,
+              "ratio": 1.4869039623908722,
+              "class": "uncertain"
+            },
+            {
+              "index": 139,
+              "t_ppg_s": 97.772,
+              "ppg_interval_s": 12.424,
+              "ecg_rr_s": 0.656,
+              "diff_s": 11.767999999999999,
+              "ratio": 18.9390243902439,
+              "class": "uncertain"
+            },
+            {
+              "index": 612,
+              "t_ppg_s": 414.768,
+              "ppg_interval_s": 0.448,
+              "ecg_rr_s": 0.5568284023668454,
+              "diff_s": -0.10882840236684538,
+              "ratio": 0.8045566607158305,
+              "class": "uncertain"
+            }
+          ]
+        },
+        "failures": [],
+        "passed_quality": true,
+        "n_suspect_intervals": 2
+      }
+    },
+    {
+      "record": "bidmc02",
+      "fs": 125.0,
+      "duration_s": 480.008,
+      "warnings": [],
+      "ppg_channel": "PLETH",
+      "ecg_channel": "II",
+      "preprocessing": {
+        "clean": {
+          "n_samples": 60001,
+          "duration_s": 480.008,
+          "n_nan": 0,
+          "n_inf": 0,
+          "n_finite": 60001,
+          "frac_invalid": 0.0,
+          "all_invalid": false,
+          "repaired": true,
+          "n_interpolated": 0
+        },
+        "band_hz": [
+          0.5,
+          8.0
+        ],
+        "order": 4,
+        "zero_phase": true
+      },
+      "quality": {
+        "validation": {
+          "n_samples": 60001,
+          "duration_s": 480.008,
+          "n_nan": 0,
+          "n_inf": 0,
+          "n_finite": 60001,
+          "frac_invalid": 0.0,
+          "all_invalid": false
+        },
+        "metrics": {
+          "robust_amplitude": 0.6158287310919432,
+          "span": 0.8250244304307176,
+          "clipping_fraction": 0.0,
+          "flatline_fraction": 0.0,
+          "baseline_wander_ratio": 0.20825233393679296
+        },
+        "flags": [],
+        "usable": true
+      },
+      "n_ppg_peaks": 726,
+      "n_ecg_rpeaks": 727,
+      "lag_s": 0.2,
+      "interval_artifact_rejection": {
+        "physiological_range_s": [
+          0.3,
+          1.5
+        ],
+        "ecg_rr_kept": 726,
+        "ecg_rr_rejected": 0,
+        "ppg_pi_kept": 725,
+        "ppg_pi_rejected": 0
+      },
+      "ecg_hrv": {
+        "source": "ECG R-R intervals (WFDB XQRS)",
+        "n_intervals_raw": 726,
+        "n_intervals_used": 726,
+        "time_domain": {
+          "mean_hr_bpm": 91.0,
+          "sdnn_ms": 16.94,
+          "rmssd_ms": 22.44,
+          "pnn50_pct": 0.97
+        },
+        "frequency_domain": {
+          "vlf_power": 36.046,
+          "lf_power": 9.458,
+          "hf_power": 43.296,
+          "lf_hf_ratio": 0.218
+        }
+      },
+      "ppg_prv": {
+        "source": "PPG pulse-to-pulse intervals",
+        "n_intervals_raw": 725,
+        "n_intervals_used": 725,
+        "time_domain": {
+          "mean_hr_bpm": 90.77,
+          "sdnn_ms": 43.73,
+          "rmssd_ms": 65.37,
+          "pnn50_pct": 20.58
+        },
+        "frequency_domain": {
+          "vlf_power": 84.351,
+          "lf_power": 427.729,
+          "hf_power": 826.852,
+          "lf_hf_ratio": 0.517
+        }
+      },
+      "hrv_prv_comparison": {
+        "mean_hr_diff_pct": -0.2527472527472571,
+        "sdnn_diff_pct": 158.14639905548992,
+        "rmssd_diff_pct": 191.31016042780752,
+        "pnn50_diff_pct": 2021.6494845360826,
+        "lf_hf_ratio_diff_pct": 137.15596330275233,
+        "interval_series_pearson_lag_corrected": 0.48010144522940884,
+        "interval_series_pearson_smoothed_10s": 0.6144533796777912,
+        "lag1_autocorr_ecg_rr": 0.12092569921804483,
+        "lag1_autocorr_ppg_pi": -0.11804217952411106,
+        "agreement": {
+          "agree_pct": 99.03448275862068,
+          "disagree_pct": 0.9655172413793104
+        },
+        "disagreement_counts": {
+          "missed_pulse_suspect": 2,
+          "false_peak_suspect": 0,
+          "ecg_suspect": 0,
+          "uncertain": 5
+        },
+        "lag_s": 0.2
+      },
+      "monitor_numerics": {
+        "mean": {
+          "hr_bpm": 91.07,
+          "pulse_bpm": 90.66
+        },
+        "note": "bedside-monitor algorithm (1 Hz numerics), not manual beat annotations"
+      },
+      "quality_assessment": {
+        "record_name": "bidmc02",
+        "fs": 125.0,
+        "n_peaks": 726,
+        "raw_quality": {
+          "flags": [],
+          "usable": true,
+          "metrics": {
+            "robust_amplitude": 0.6158287310919432,
+            "span": 0.8250244304307176,
+            "clipping_fraction": 0.0,
+            "flatline_fraction": 0.0,
+            "baseline_wander_ratio": 0.20825233393679296
+          }
+        },
+        "motion": {
+          "n_windows": 240,
+          "motion_fraction": 0.0,
+          "motion_windows": [],
+          "median_window_std": 0.14008738506188503,
+          "k": 3.0,
+          "window_s": 2.0
+        },
+        "morphology": {
+          "n_beats": 726,
+          "n_valid": 725,
+          "n_morphology_outliers": 1,
+          "morphology_outlier_fraction": 0.001379310344827586,
+          "median_correlation": 0.9733960440155576,
+          "amplitude_median": 0.41707633692312773,
+          "amplitude_mad": 0.05740035380743563,
+          "amplitude_robust_cv": 0.1376255345265853,
+          "min_corr": 0.5
+        },
+        "intervals": {
+          "suspect_indices": [
+            301,
+            349
+          ],
+          "reasons": [
+            "missed_pulse_suspect",
+            "missed_pulse_suspect"
+          ],
+          "counts": {
+            "invalid_interval": 0,
+            "implausible_interval": 0,
+            "false_peak_suspect": 0,
+            "missed_pulse_suspect": 2
+          },
+          "n_intervals": 725,
+          "median_interval_s": 0.656,
+          "hard_limits_s": [
+            0.3,
+            1.5
+          ]
+        },
+        "ecg_ppg_disagreement": {
+          "lag_s": 0.2,
+          "n_compared": 725,
+          "n_agree": 718,
+          "n_disagree": 7,
+          "counts": {
+            "missed_pulse_suspect": 2,
+            "false_peak_suspect": 0,
+            "ecg_suspect": 0,
+            "uncertain": 5
+          },
+          "records": [
+            {
+              "index": 300,
+              "t_ppg_s": 198.356,
+              "ppg_interval_s": 0.68,
+              "ecg_rr_s": 0.5319172413793082,
+              "diff_s": 0.14808275862069187,
+              "ratio": 1.278394357431807,
+              "class": "uncertain"
+            },
+            {
+              "index": 301,
+              "t_ppg_s": 199.332,
+              "ppg_interval_s": 1.272,
+              "ecg_rr_s": 0.7733913043478259,
+              "diff_s": 0.49860869565217414,
+              "ratio": 1.644704295030358,
+              "class": "missed_pulse_suspect"
+            },
+            {
+              "index": 348,
+              "t_ppg_s": 230.516,
+              "ppg_interval_s": 0.648,
+              "ecg_rr_s": 0.5181843971631195,
+              "diff_s": 0.12981560283688054,
+              "ratio": 1.2505200919741624,
+              "class": "uncertain"
+            },
+            {
+              "index": 349,
+              "t_ppg_s": 231.48,
+              "ppg_interval_s": 1.28,
+              "ecg_rr_s": 0.7771304347826086,
+              "diff_s": 0.5028695652173915,
+              "ratio": 1.647085151616874,
+              "class": "missed_pulse_suspect"
+            },
+            {
+              "index": 553,
+              "t_ppg_s": 366.856,
+              "ppg_interval_s": 0.8,
+              "ecg_rr_s": 0.638893081761006,
+              "diff_s": 0.16110691823899403,
+              "ratio": 1.2521656953851006,
+              "class": "uncertain"
+            },
+            {
+              "index": 554,
+              "t_ppg_s": 367.484,
+              "ppg_interval_s": 0.456,
+              "ecg_rr_s": 0.6332075471698114,
+              "diff_s": -0.1772075471698114,
+              "ratio": 0.7201430274135875,
+              "class": "uncertain"
+            },
+            {
+              "index": 572,
+              "t_ppg_s": 379.008,
+              "ppg_interval_s": 0.544,
+              "ecg_rr_s": 0.6543312883435581,
+              "diff_s": -0.1103312883435581,
+              "ratio": 0.8313831383138316,
+              "class": "uncertain"
+            }
+          ]
+        },
+        "failures": [],
+        "passed_quality": true,
+        "n_suspect_intervals": 2
+      }
+    },
+    {
+      "record": "bidmc03",
+      "fs": 125.0,
+      "duration_s": 480.008,
+      "warnings": [],
+      "ppg_channel": "PLETH",
+      "ecg_channel": "II",
+      "preprocessing": {
+        "clean": {
+          "n_samples": 60001,
+          "duration_s": 480.008,
+          "n_nan": 0,
+          "n_inf": 0,
+          "n_finite": 60001,
+          "frac_invalid": 0.0,
+          "all_invalid": false,
+          "repaired": true,
+          "n_interpolated": 0
+        },
+        "band_hz": [
+          0.5,
+          8.0
+        ],
+        "order": 4,
+        "zero_phase": true
+      },
+      "quality": {
+        "validation": {
+          "n_samples": 60001,
+          "duration_s": 480.008,
+          "n_nan": 0,
+          "n_inf": 0,
+          "n_finite": 60001,
+          "frac_invalid": 0.0,
+          "all_invalid": false
+        },
+        "metrics": {
+          "robust_amplitude": 0.5043956166017902,
+          "span": 0.7145650000731041,
+          "clipping_fraction": 0.0,
+          "flatline_fraction": 0.0,
+          "baseline_wander_ratio": 0.12451167648281268
+        },
+        "flags": [],
+        "usable": true
+      },
+      "n_ppg_peaks": 611,
+      "n_ecg_rpeaks": 623,
+      "lag_s": 0.7,
+      "interval_artifact_rejection": {
+        "physiological_range_s": [
+          0.3,
+          1.5
+        ],
+        "ecg_rr_kept": 602,
+        "ecg_rr_rejected": 20,
+        "ppg_pi_kept": 610,
+        "ppg_pi_rejected": 0
+      },
+      "ecg_hrv": {
+        "source": "ECG R-R intervals (WFDB XQRS)",
+        "n_intervals_raw": 622,
+        "n_intervals_used": 602,
+        "time_domain": {
+          "mean_hr_bpm": 77.0,
+          "sdnn_ms": 63.16,
+          "rmssd_ms": 89.12,
+          "pnn50_pct": 14.64
+        },
+        "frequency_domain": {
+          "vlf_power": 256.324,
+          "lf_power": 758.846,
+          "hf_power": 1391.179,
+          "lf_hf_ratio": 0.545
+        }
+      },
+      "ppg_prv": {
+        "source": "PPG pulse-to-pulse intervals",
+        "n_intervals_raw": 610,
+        "n_intervals_used": 610,
+        "time_domain": {
+          "mean_hr_bpm": 76.38,
+          "sdnn_ms": 59.01,
+          "rmssd_ms": 95.12,
+          "pnn50_pct": 6.4
+        },
+        "frequency_domain": {
+          "vlf_power": 19.688,
+          "lf_power": 136.417,
+          "hf_power": 846.242,
+          "lf_hf_ratio": 0.161
+        }
+      },
+      "hrv_prv_comparison": {
+        "mean_hr_diff_pct": -0.8051948051948111,
+        "sdnn_diff_pct": -6.570614312856237,
+        "rmssd_diff_pct": 6.732495511669659,
+        "pnn50_diff_pct": -56.28415300546448,
+        "lf_hf_ratio_diff_pct": -70.45871559633026,
+        "interval_series_pearson_lag_corrected": 0.5129862250439263,
+        "interval_series_pearson_smoothed_10s": 0.6507206579469671,
+        "lag1_autocorr_ecg_rr": 0.00034514776425783635,
+        "lag1_autocorr_ppg_pi": -0.2993822816233802,
+        "agreement": {
+          "agree_pct": 93.44262295081967,
+          "disagree_pct": 6.557377049180328
+        },
+        "disagreement_counts": {
+          "missed_pulse_suspect": 4,
+          "false_peak_suspect": 1,
+          "ecg_suspect": 0,
+          "uncertain": 35
+        },
+        "lag_s": 0.7
+      },
+      "monitor_numerics": {
+        "mean": {
+          "hr_bpm": 76.64,
+          "pulse_bpm": 75.89
+        },
+        "note": "bedside-monitor algorithm (1 Hz numerics), not manual beat annotations"
+      },
+      "quality_assessment": {
+        "record_name": "bidmc03",
+        "fs": 125.0,
+        "n_peaks": 611,
+        "raw_quality": {
+          "flags": [],
+          "usable": true,
+          "metrics": {
+            "robust_amplitude": 0.5043956166017902,
+            "span": 0.7145650000731041,
+            "clipping_fraction": 0.0,
+            "flatline_fraction": 0.0,
+            "baseline_wander_ratio": 0.12451167648281268
+          }
+        },
+        "motion": {
+          "n_windows": 240,
+          "motion_fraction": 0.0,
+          "motion_windows": [],
+          "median_window_std": 0.14715806269312703,
+          "k": 3.0,
+          "window_s": 2.0
+        },
+        "morphology": {
+          "n_beats": 611,
+          "n_valid": 610,
+          "n_morphology_outliers": 2,
+          "morphology_outlier_fraction": 0.003278688524590164,
+          "median_correlation": 0.9991465716277526,
+          "amplitude_median": 0.4777839016208769,
+          "amplitude_mad": 0.013555408905672445,
+          "amplitude_robust_cv": 0.028371422435301528,
+          "min_corr": 0.5
+        },
+        "intervals": {
+          "suspect_indices": [
+            163,
+            164,
+            545,
+            548
+          ],
+          "reasons": [
+            "false_peak_suspect",
+            "false_peak_suspect",
+            "false_peak_suspect",
+            "false_peak_suspect"
+          ],
+          "counts": {
+            "invalid_interval": 0,
+            "implausible_interval": 0,
+            "false_peak_suspect": 4,
+            "missed_pulse_suspect": 0
+          },
+          "n_intervals": 610,
+          "median_interval_s": 0.784,
+          "hard_limits_s": [
+            0.3,
+            1.5
+          ]
+        },
+        "ecg_ppg_disagreement": {
+          "lag_s": 0.7,
+          "n_compared": 610,
+          "n_agree": 559,
+          "n_disagree": 51,
+          "counts": {
+            "missed_pulse_suspect": 8,
+            "false_peak_suspect": 2,
+            "ecg_suspect": 6,
+            "uncertain": 35
+          },
+          "records": [
+            {
+              "index": 0,
+              "t_ppg_s": 0.52,
+              "ppg_interval_s": 0.784,
+              "ecg_rr_s": 0.64,
+              "diff_s": 0.14400000000000002,
+              "ratio": 1.225,
+              "class": "uncertain"
+            },
+            {
+              "index": 1,
+              "t_ppg_s": 1.312,
+              "ppg_interval_s": 0.8,
+              "ecg_rr_s": 0.6544357541899442,
+              "diff_s": 0.1455642458100559,
+              "ratio": 1.222427098272212,
+              "class": "uncertain"
+            },
+            {
+              "index": 3,
+              "t_ppg_s": 2.884,
+              "ppg_interval_s": 0.792,
+              "ecg_rr_s": 0.5501016949152541,
+              "diff_s": 0.24189830508474597,
+              "ratio": 1.4397337934434316,
+              "class": "uncertain"
+            },
+            {
+              "index": 4,
+              "t_ppg_s": 3.668,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.643685393258427,
+              "diff_s": 0.13231460674157303,
+              "ratio": 1.2055578829772378,
+              "class": "uncertain"
+            },
+            {
+              "index": 8,
+              "t_ppg_s": 6.82,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.5712941176470592,
+              "diff_s": 0.20470588235294085,
+              "ratio": 1.3583196046128494,
+              "class": "uncertain"
+            },
+            {
+              "index": 9,
+              "t_ppg_s": 7.604,
+              "ppg_interval_s": 0.792,
+              "ecg_rr_s": 0.6382921348314606,
+              "diff_s": 0.1537078651685394,
+              "ratio": 1.240811153358682,
+              "class": "uncertain"
+            },
+            {
+              "index": 36,
+              "t_ppg_s": 29.032,
+              "ppg_interval_s": 0.8,
+              "ecg_rr_s": 0.5781333333333338,
+              "diff_s": 0.2218666666666662,
+              "ratio": 1.3837638376383752,
+              "class": "uncertain"
+            },
+            {
+              "index": 37,
+              "t_ppg_s": 29.828,
+              "ppg_interval_s": 0.792,
+              "ecg_rr_s": 0.640446927374302,
+              "diff_s": 0.15155307262569806,
+              "ratio": 1.2366364270760637,
+              "class": "uncertain"
+            },
+            {
+              "index": 61,
+              "t_ppg_s": 48.736,
+              "ppg_interval_s": 0.96,
+              "ecg_rr_s": 0.5988363636363572,
+              "diff_s": 0.3611636363636428,
+              "ratio": 1.6031090599951594,
+              "class": "missed_pulse_suspect"
+            },
+            {
+              "index": 77,
+              "t_ppg_s": 61.32,
+              "ppg_interval_s": 0.48,
+              "ecg_rr_s": 0.6125888324873082,
+              "diff_s": -0.13258883248730824,
+              "ratio": 0.7835598276433561,
+              "class": "uncertain"
+            },
+            {
+              "index": 126,
+              "t_ppg_s": 99.716,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.5827008547008606,
+              "diff_s": 0.19329914529913939,
+              "ratio": 1.3317296409293458,
+              "class": "uncertain"
+            },
+            {
+              "index": 127,
+              "t_ppg_s": 100.492,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.6187586206896553,
+              "diff_s": 0.15724137931034476,
+              "ratio": 1.2541239411502452,
+              "class": "uncertain"
+            },
+            {
+              "index": 130,
+              "t_ppg_s": 102.828,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.4632452830188678,
+              "diff_s": 0.3127547169811322,
+              "ratio": 1.675138481590095,
+              "class": "missed_pulse_suspect"
+            },
+            {
+              "index": 131,
+              "t_ppg_s": 103.608,
+              "ppg_interval_s": 0.784,
+              "ecg_rr_s": 0.6141818181818199,
+              "diff_s": 0.1698181818181801,
+              "ratio": 1.2764949674363493,
+              "class": "uncertain"
+            },
+            {
+              "index": 132,
+              "t_ppg_s": 104.388,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.6087007299270094,
+              "diff_s": 0.1672992700729906,
+              "ratio": 1.2748465080583224,
+              "class": "uncertain"
+            },
+            {
+              "index": 133,
+              "t_ppg_s": 105.164,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.3623529411764691,
+              "diff_s": 0.4136470588235309,
+              "ratio": 2.1415584415584505,
+              "class": "missed_pulse_suspect"
+            },
+            {
+              "index": 150,
+              "t_ppg_s": 118.364,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.6594285714285681,
+              "diff_s": 0.11657142857143188,
+              "ratio": 1.1767764298093646,
+              "class": "uncertain"
+            },
+            {
+              "index": 151,
+              "t_ppg_s": 119.14,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.3980458015267184,
+              "diff_s": 0.3779541984732816,
+              "ratio": 1.949524393985881,
+              "class": "missed_pulse_suspect"
+            },
+            {
+              "index": 152,
+              "t_ppg_s": 119.916,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 1.4262546353522805,
+              "diff_s": -0.6502546353522805,
+              "ratio": 0.5440823684393008,
+              "class": "false_peak_suspect"
+            },
+            {
+              "index": 153,
+              "t_ppg_s": 120.692,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 2.5830605686032,
+              "diff_s": -1.8070605686032002,
+              "ratio": 0.30041881689968464,
+              "class": "ecg_suspect"
+            },
+            {
+              "index": 154,
+              "t_ppg_s": 121.468,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 3.7398665018541415,
+              "diff_s": -2.9638665018541417,
+              "ratio": 0.20749403745167821,
+              "class": "ecg_suspect"
+            },
+            {
+              "index": 155,
+              "t_ppg_s": 122.244,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 4.896672435105061,
+              "diff_s": -4.120672435105061,
+              "ratio": 0.15847496647656614,
+              "class": "ecg_suspect"
+            },
+            {
+              "index": 156,
+              "t_ppg_s": 123.016,
+              "ppg_interval_s": 0.768,
+              "ecg_rr_s": 5.1514870395634365,
+              "diff_s": -4.383487039563437,
+              "ratio": 0.14908316649188041,
+              "class": "ecg_suspect"
+            },
+            {
+              "index": 157,
+              "t_ppg_s": 123.792,
+              "ppg_interval_s": 0.784,
+              "ecg_rr_s": 3.7138226466575786,
+              "diff_s": -2.9298226466575787,
+              "ratio": 0.21110324175162107,
+              "class": "ecg_suspect"
+            },
+            {
+              "index": 158,
+              "t_ppg_s": 124.576,
+              "ppg_interval_s": 0.784,
+              "ecg_rr_s": 2.2613369713506373,
+              "diff_s": -1.4773369713506372,
+              "ratio": 0.3466975554429367,
+              "class": "ecg_suspect"
+            },
+            {
+              "index": 160,
+              "t_ppg_s": 126.124,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.6224367816091935,
+              "diff_s": 0.15356321839080656,
+              "ratio": 1.2467129561235082,
+              "class": "uncertain"
+            },
+            {
+              "index": 163,
+              "t_ppg_s": 128.256,
+              "ppg_interval_s": 0.384,
+              "ecg_rr_s": 0.7244919786096258,
+              "diff_s": -0.34049197860962577,
+              "ratio": 0.5300265721877767,
+              "class": "false_peak_suspect"
+            },
+            {
+              "index": 165,
+              "t_ppg_s": 129.236,
+              "ppg_interval_s": 0.776,
+              "ecg_rr_s": 0.3292307692307693,
+              "diff_s": 0.4467692307692307,
+              "ratio": 2.357009345794392,
+              "class": "missed_pulse_suspect"
+            },
+            {
+              "index": 226,
+              "t_ppg_s": 177.16,
+              "ppg_interval_s": 0.512,
+              "ecg_rr_s": 0.673212121212127,
+              "diff_s": -0.16121212121212702,
+              "ratio": 0.7605329492257766,
+              "class": "uncertain"
+            },
+            {
+              "index": 227,
+              "t_ppg_s": 177.936,
+              "ppg_interval_s": 1.04,
+              "ecg_rr_s": 0.9083636363636449,
+              "diff_s": 0.1316363636363551,
+              "ratio": 1.1449159327461862,
+              "class": "uncertain"
+            },
+            {
+              "index": 238,
+              "t_ppg_s": 186.62,
+              "ppg_interval_s": 0.488,
+              "ecg_rr_s": 0.6064489795918426,
+              "diff_s": -0.11844897959184264,
+              "ratio": 0.8046843451339267,
+              "class": "uncertain"
+            },
+            {
+              "index": 247,
+              "t_ppg_s": 193.684,
+              "ppg_interval_s": 0.504,
+              "ecg_rr_s": 0.6206530612244953,
+              "diff_s": -0.11665306122449526,
+              "ratio": 0.8120478758384777,
+              "class": "uncertain"
+            },
+            {
+              "index": 296,
+              "t_ppg_s": 232.384,
+              "ppg_interval_s": 0.8,
+              "ecg_rr_s": 0.3151304347826138,
+              "diff_s": 0.4848695652173862,
+              "ratio": 2.5386313465783252,
+              "class": "uncertain"
+            },
+            {
+              "index": 375,
+              "t_ppg_s": 295.124,
+              "ppg_interval_s": 0.792,
+              "ecg_rr_s": 0.6043697478991328,
+              "diff_s": 0.18763025210086726,
+              "ratio": 1.3104560622914934,
+              "class": "uncertain"
+            },
+            {
+              "index": 376,
+              "t_ppg_s": 295.912,
+              "ppg_interval_s": 0.784,
+              "ecg_rr_s": 0.6287457627118603,
+              "diff_s": 0.1552542372881397,
+              "ratio": 1.2469268923873276,
+              "class": "uncertain"
+            },
+            {
+              "index": 384,
+              "t_ppg_s": 302.06,
+              "ppg_interval_s": 0.472,
+              "ecg_rr_s": 0.6109238578680307,
+              "diff_s": -0.13892385786803074,
+              "ratio": 0.772600372241412,
+              "class": "uncertain"
+            },
+            {
+              "index": 391,
+              "t_ppg_s": 307.588,
+              "ppg_interval_s": 0.536,
+              "ecg_rr_s": 0.6521632653061308,
+              "diff_s": -0.11616326530613075,
+              "ratio": 0.8218800851170255,
+              "class": "uncertain"
+            },
+            {
+              "index": 438,
+              "t_ppg_s": 344.544,
+              "ppg_interval_s": 0.784,
+              "ecg_rr_s": 0.37567346938775587,
+              "diff_s": 0.40832653061224417,
+              "ratio": 2.0869187309865236,
+              "class": "missed_pulse_suspect"
+            },
+            {
+              "index": 464,
+              "t_ppg_s": 364.904,
+              "ppg_interval_s": 0.752,
+              "ecg_rr_s": 0.9092791878172642,
+              "diff_s": -0.15727918781726424,
+              "ratio": 0.8270287168951762,
+              "class": "uncertain"
+            },
+            {
+              "index": 465,
+              "t_ppg_s": 365.684,
+              "ppg_interval_s": 0.808,
+              "ecg_rr_s": 0.6600223463687247,
+              "diff_s": 0.14797765363127535,
+              "ratio": 1.224200975081239,
+              "class": "uncertain"
+            },
+            {
+              "index": 480,
+              "t_ppg_s": 377.452,
+              "ppg_interval_s": 0.792,
+              "ecg_rr_s": 0.41280000000001416,
+              "diff_s": 0.3791999999999859,
+              "ratio": 1.918604651162725,
+              "class": "missed_pulse_suspect"
+            },
+            {
+              "index": 481,
+              "t_ppg_s": 378.24,
+              "ppg_interval_s": 0.784,
+              "ecg_rr_s": 1.001491525423717,
+              "diff_s": -0.21749152542371708,
+              "ratio": 0.782832385594377,
+              "class": "uncertain"
+            },
+            {
+              "index": 501,
+              "t_ppg_s": 393.984,
+              "ppg_interval_s": 0.784,
+              "ecg_rr_s": 0.44587755102039917,
+              "diff_s": 0.33812244897960086,
+              "ratio": 1.75833028194804,
+              "class": "missed_pulse_suspect"
+            },
+            {
+              "index": 536,
+              "t_ppg_s": 421.32,
+              "ppg_interval_s": 0.784,
+              "ecg_rr_s": 0.3127111111110993,
+              "diff_s": 0.47128888888890075,
+              "ratio": 2.507106310403733,
+              "class": "uncertain"
+            },
+            {
+              "index": 537,
+              "t_ppg_s": 422.108,
+              "ppg_interval_s": 0.792,
+              "ecg_rr_s": 0.6296949152542377,
+              "diff_s": 0.16230508474576233,
+              "ratio": 1.2577519379844952,
+              "class": "uncertain"
+            },
+            {
+              "index": 545,
+              "t_ppg_s": 428.24,
+              "ppg_interval_s": 0.464,
+              "ecg_rr_s": 0.5947208121827445,
+              "diff_s": -0.1307208121827445,
+              "ratio": 0.7801980198019758,
+              "class": "uncertain"
+            },
+            {
+              "index": 548,
+              "t_ppg_s": 430.6,
+              "ppg_interval_s": 0.464,
+              "ecg_rr_s": 0.6297142857143027,
+              "diff_s": -0.16571428571430263,
+              "ratio": 0.7368421052631381,
+              "class": "uncertain"
+            },
+            {
+              "index": 549,
+              "t_ppg_s": 431.364,
+              "ppg_interval_s": 1.064,
+              "ecg_rr_s": 0.9497981651376146,
+              "diff_s": 0.11420183486238544,
+              "ratio": 1.120238003245499,
+              "class": "uncertain"
+            },
+            {
+              "index": 557,
+              "t_ppg_s": 437.708,
+              "ppg_interval_s": 0.536,
+              "ecg_rr_s": 0.6525888324873177,
+              "diff_s": -0.11658883248731766,
+              "ratio": 0.8213441194772768,
+              "class": "uncertain"
+            },
+            {
+              "index": 560,
+              "t_ppg_s": 440.048,
+              "ppg_interval_s": 0.48,
+              "ecg_rr_s": 0.6037360406091484,
+              "diff_s": -0.12373604060914845,
+              "ratio": 0.7950494383533852,
+              "class": "uncertain"
+            },
+            {
+              "index": 563,
+              "t_ppg_s": 442.42,
+              "ppg_interval_s": 0.504,
+              "ecg_rr_s": 0.6290909090909111,
+              "diff_s": -0.12509090909091114,
+              "ratio": 0.8011560693641593,
+              "class": "uncertain"
+            }
+          ]
+        },
+        "failures": [],
+        "passed_quality": true,
+        "n_suspect_intervals": 4
+      }
+    }
+  ],
+  "failures": [],
+  "aggregate": {
+    "n_records": 3,
+    "mean_hr_diff_pct": -0.404,
+    "mean_sdnn_diff_pct": 57.986,
+    "mean_rmssd_diff_pct": 69.369,
+    "mean_lf_hf_ratio_diff_pct": 506.502,
+    "mean_interval_series_pearson": 0.502,
+    "mean_interval_series_pearson_smoothed_10s": 0.598,
+    "mean_agreement_pct": 97.398,
+    "mean_lag_s": 0.467,
+    "mean_ecg_hrv_sdnn_ms": 35.293,
+    "mean_ppg_prv_sdnn_ms": 44.763,
+    "mean_ecg_hrv_rmssd_ms": 50.897,
+    "mean_ppg_prv_rmssd_ms": 68.587
+  }
+}

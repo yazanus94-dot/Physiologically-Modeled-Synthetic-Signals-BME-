@@ -1,32 +1,32 @@
 {
   "raw_noisy": {
-    "snr_db": -0.845,
+    "snr_db": -1.79,
     "snr_improvement_db": 0.0,
-    "rmse": 0.21443
+    "rmse": 0.21287
   },
   "median_filter_baseline_removal": {
-    "snr_db": 5.977,
-    "snr_improvement_db": 6.822,
-    "rmse": 0.09776
+    "snr_db": 6.837,
+    "snr_improvement_db": 8.627,
+    "rmse": 0.07884
   },
   "bandpass_0.5_40hz": {
-    "snr_db": 6.32,
-    "snr_improvement_db": 7.165,
-    "rmse": 0.09398
+    "snr_db": 14.553,
+    "snr_improvement_db": 16.343,
+    "rmse": 0.03243
   },
   "notch_50hz": {
-    "snr_db": -0.518,
-    "snr_improvement_db": 0.326,
-    "rmse": 0.20652
+    "snr_db": -1.458,
+    "snr_improvement_db": 0.331,
+    "rmse": 0.2049
   },
   "fft_soft_threshold": {
-    "snr_db": 4.357,
-    "snr_improvement_db": 5.202,
-    "rmse": 0.11781
+    "snr_db": 6.966,
+    "snr_improvement_db": 8.755,
+    "rmse": 0.07768
   },
   "combined_pipeline": {
-    "snr_db": 6.145,
-    "snr_improvement_db": 6.99,
-    "rmse": 0.09589
+    "snr_db": 13.282,
+    "snr_improvement_db": 15.071,
+    "rmse": 0.03754
   }
 }

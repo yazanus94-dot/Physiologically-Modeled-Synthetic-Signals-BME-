@@ -43,9 +43,22 @@ def frequency_domain_metrics(peaks, fs):
     return _frequency_domain_metrics_from_peaks(peaks, fs)
 
 
-def _frequency_domain_metrics_from_peaks(peaks, fs):
-    itis_s, t_mid = _clean_tachogram(peaks, fs)
-    if len(itis_s) < 16:  # LSQ interpolation of such short series is not meaningful
+def frequency_domain_metrics_from_intervals(t_mid, intervals_s):
+    """VLF/LF/HF power and LF/HF ratio from an explicit interval series.
+
+    Same computation as ``frequency_domain_metrics`` but takes the interval
+    mid-point times (s) and durations (s) directly, so callers can apply
+    artifact rejection (dropping sensor-dropout gaps or ectopic beats)
+    first and keep the true time axis — deleting intervals from a *peak*
+    series would compress time and shift the LF/HF bands.
+    """
+    t_mid = np.asarray(t_mid, dtype=float)
+    itis_s = np.asarray(intervals_s, dtype=float)
+    n = min(t_mid.size, itis_s.size)
+    t_mid, itis_s = t_mid[:n], itis_s[:n]
+    good = np.isfinite(t_mid) & np.isfinite(itis_s) & (itis_s > 0)
+    t_mid, itis_s = t_mid[good], itis_s[good]
+    if len(itis_s) < 16:  # interpolation of such short series is not meaningful
         return {"vlf_power": float("nan"), "lf_power": float("nan"),
                 "hf_power": float("nan"), "lf_hf_ratio": float("nan")}
 
@@ -68,3 +81,8 @@ def _frequency_domain_metrics_from_peaks(peaks, fs):
     ratio = lf / hf if hf > 0 else float("nan")
     return {"vlf_power": round(vlf, 3), "lf_power": round(lf, 3),
             "hf_power": round(hf, 3), "lf_hf_ratio": round(ratio, 3)}
+
+
+def _frequency_domain_metrics_from_peaks(peaks, fs):
+    itis_s, t_mid = _clean_tachogram(peaks, fs)
+    return frequency_domain_metrics_from_intervals(t_mid, itis_s)
