@@ -57,6 +57,12 @@ from quality_assessment import assess_record, compare_intervals  # noqa: E402
 
 OUT_DIR = os.path.join(HERE, "..", "outputs", "real")
 
+# Short-term HRV/PRV standards (Task Force 1996) assume recordings of at
+# least ~5 min; shorter windows make SDNN/RMSSD and especially the band
+# powers unstable.  Records below this are reported and skipped rather
+# than analysed and quietly averaged in.
+MIN_ANALYSIS_S = 300.0
+
 
 def parse_args(argv=None):
     p = argparse.ArgumentParser(
@@ -78,6 +84,124 @@ def _pct(a, b):
     if not (np.isfinite(a) and np.isfinite(b)) or abs(b) < 1e-12:
         return float("nan")
     return 100.0 * (a - b) / abs(b)
+
+
+def agreement_stats(est, ref):
+    """MAE / RMSE / bias / Bland-Altman limits of agreement.
+
+    ``est`` and ``ref`` are paired samples of the same quantity (e.g. the
+    heart rate this pipeline derives versus the bedside monitor's own
+    reading at the same instant).
+
+    * bias  — mean(est - ref); systematic offset, signed.
+    * MAE   — mean|est - ref|; typical magnitude of the error.
+    * RMSE  — sqrt(mean((est - ref)^2)); penalises large excursions.
+    * LoA   — bias ± 1.96 * SD(est - ref), the classic Bland-Altman
+              95% limits of agreement.  Two methods agree acceptably when
+              those limits sit inside a pre-declared clinically tolerable
+              band; they are reported rather than a bare correlation,
+              because correlation is insensitive to systematic offset.
+
+    Returns NaN-filled dict when fewer than 2 pairs are available.
+    """
+    est = np.asarray(est, dtype=float).ravel()
+    ref = np.asarray(ref, dtype=float).ravel()
+    if est.size != ref.size:
+        raise ValueError("est/ref length mismatch: %d vs %d"
+                         % (est.size, ref.size))
+    ok = np.isfinite(est) & np.isfinite(ref)
+    est, ref = est[ok], ref[ok]
+    n = int(est.size)
+    empty = {"n_pairs": n, "mae": float("nan"), "rmse": float("nan"),
+             "bias": float("nan"), "sd_diff": float("nan"),
+             "loa_lower": float("nan"), "loa_upper": float("nan"),
+             "pearson_r": float("nan")}
+    if n < 2:
+        return empty
+
+    d = est - ref
+    sd = float(np.std(d, ddof=1))
+    bias = float(np.mean(d))
+    return {
+        "n_pairs": n,
+        "mae": round(float(np.mean(np.abs(d))), 4),
+        "rmse": round(float(np.sqrt(np.mean(d * d))), 4),
+        "bias": round(bias, 4),
+        "sd_diff": round(sd, 4),
+        "loa_lower": round(bias - 1.96 * sd, 4),
+        "loa_upper": round(bias + 1.96 * sd, 4),
+        "pearson_r": round(_pearson(est, ref), 4),
+    }
+
+
+def compare_to_monitor(t_est_s, est_bpm, numerics, role="hr"):
+    """Time-aligned comparison of our heart rate against the monitor.
+
+    The monitor emits 1 Hz numerics on its own clock; our rate comes from
+    interval midpoints on the waveform clock.  Both are placed on a common
+    1 Hz grid by linear interpolation over the overlap window only — no
+    extrapolation past either series' end — so each paired sample compares
+    two estimates of the heart rate *at the same instant*.
+
+    Returns None when there is nothing to compare (missing channel, no
+    overlap, or fewer than 2 paired samples).
+    """
+    if numerics is None:
+        return None
+    mon = numerics.get(role)
+    t_mon = numerics.get("t")
+    if mon is None or t_mon is None:
+        return None
+
+    t_est = np.asarray(t_est_s, dtype=float)
+    v_est = np.asarray(est_bpm, dtype=float)
+    t_mon = np.asarray(t_mon, dtype=float)
+    v_mon = np.asarray(mon, dtype=float)
+    if t_est.size != v_est.size:
+        raise ValueError(
+            "estimate arrays must be paired: len(t_est)=%d != len(est)=%d"
+            % (t_est.size, v_est.size))
+    if t_mon.size != v_mon.size:
+        raise ValueError(
+            "monitor arrays must be paired: len(t)=%d != len(v)=%d"
+            % (t_mon.size, v_mon.size))
+
+    good_e = np.isfinite(t_est) & np.isfinite(v_est)
+    good_m = np.isfinite(t_mon) & np.isfinite(v_mon) & (v_mon > 0)
+    if good_e.sum() < 2 or good_m.sum() < 2:
+        return None
+    t_est, v_est = t_est[good_e], v_est[good_e]
+    t_mon, v_mon = t_mon[good_m], v_mon[good_m]
+
+    # overlap window — interpolate neither series beyond its own data
+    lo = max(float(t_est.min()), float(t_mon.min()))
+    hi = min(float(t_est.max()), float(t_mon.max()))
+    if not (hi > lo):
+        return None
+    # 1 Hz grid over the integer seconds inside [lo, hi].  ``ceil``/``floor``
+    # guarantee every grid point satisfies lo <= t <= hi.
+    grid = np.arange(np.ceil(lo), np.floor(hi) + 1.0)
+    if grid.size < 2:
+        return None
+
+    ours = np.interp(grid, t_est, v_est)
+    theirs = np.interp(grid, t_mon, v_mon)
+
+    stats = agreement_stats(ours, theirs)
+    if stats["n_pairs"] < 2:
+        return None
+    stats.update({
+        "monitor_role": role,
+        "monitor_channel": (numerics.get("sig_name") or [None])[
+            (numerics.get("roles") or {}).get(role) or 0]
+        if (numerics.get("roles") or {}).get(role) is not None else None,
+        "grid_hz": 1.0,
+        "overlap_s": [round(lo, 3), round(hi, 3)],
+        "reference_note": (
+            "Bedside-monitor algorithm output (1 Hz numerics) — an "
+            "automated monitor reading, NOT manual beat annotation."),
+    })
+    return stats
 
 
 def _pearson(a, b):
@@ -118,6 +242,14 @@ def analyse_record(bundle):
         raise ValueError("no PPG channel in record %s" % name)
     if bundle["ecg"] is None:
         raise ValueError("no ECG channel in record %s" % name)
+
+    # Minimum analysis duration for a short-term HRV/PRV comparison.
+    if float(bundle["duration_s"]) < MIN_ANALYSIS_S:
+        raise ValueError(
+            "record %s is %.1f s long, below the %.0f s minimum required "
+            "for a short-term HRV/PRV comparison — refusing to report "
+            "variability metrics from a window this short"
+            % (name, float(bundle["duration_s"]), MIN_ANALYSIS_S))
 
     # ---------------- PPG: preprocess + systolic peaks -----------------
     raw_ppg = np.asarray(bundle["ppg"], dtype=float)
@@ -222,6 +354,27 @@ def analyse_record(bundle):
                        "note": "bedside-monitor algorithm (1 Hz numerics), "
                                "not manual beat annotations"}
 
+        # Time-aligned agreement: our instantaneous rate from each interval
+        # series versus the monitor's own reading at the same instant.
+        # t_mid/intervals are already paired 1:1 (see rr_intervals), so the
+        # interval midpoint is the instant the interval's rate describes.
+        if monitor is not None:
+            ecg_bpm = 60.0 / rr_f if rr_f.size else np.array([])
+            ppg_bpm = 60.0 / pi_f if pi_f.size else np.array([])
+
+            cmp_ecg = compare_to_monitor(t_rr_f, ecg_bpm, num, "hr")
+            cmp_ppg = compare_to_monitor(t_pi_f, ppg_bpm, num, "hr")
+            if cmp_ecg is not None or cmp_ppg is not None:
+                monitor["time_aligned"] = {
+                    "ecg_derived_hr_vs_monitor": cmp_ecg,
+                    "ppg_derived_hr_vs_monitor": cmp_ppg,
+                    "method": ("Both series placed on a common 1 Hz grid "
+                               "over the overlap window only (linear "
+                               "interpolation, no extrapolation), then "
+                               "MAE / RMSE / bias / Bland-Altman 95% "
+                               "limits of agreement computed on the paired "
+                               "samples.")}
+
     out.update({
         "ppg_channel": bundle["ppg_channel"],
         "ecg_channel": bundle["ecg_channel"],
@@ -237,11 +390,21 @@ def analyse_record(bundle):
         },
         # ---- the two quantities, never conflated ----
         "ecg_hrv": {"source": "ECG R-R intervals (WFDB XQRS)",
+                    "reference_kind": (
+                        "AUTOMATED detector output (wfdb XQRS applied to "
+                        "lead II) used as the HRV reference. This is not "
+                        "manual beat annotation and not a human-verified "
+                        "gold standard; detector error propagates into "
+                        "every ECG-derived variability figure reported "
+                        "here."),
                     "n_intervals_raw": int(rr_s.size),
                     "n_intervals_used": int(rr_f.size),
                     "time_domain": hrv_time,
                     "frequency_domain": hrv_freq},
         "ppg_prv": {"source": "PPG pulse-to-pulse intervals",
+                    "reference_kind": (
+                        "AUTOMATED detector output (this project's own "
+                        "peak detector on the PLETH channel)."),
                     "n_intervals_raw": int(pi_s.size),
                     "n_intervals_used": int(pi_f.size),
                     "time_domain": prv_time,

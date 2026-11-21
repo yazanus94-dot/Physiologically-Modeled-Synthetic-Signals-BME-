@@ -126,38 +126,59 @@ powerline content is a small fraction of the total corruption on its own.
 
 ### Real PhysioNet NSTDB (`outputs/real/`)
 
-18 cells (3 noise categories × 6 target SNR levels) × 6 methods = 108
-summary rows in `results_summary.csv`; 216 segment-level rows in
-`results_segments.csv`. Mean SNR improvement (dB) per cell:
+**Data mixing:** clean MIT-BIH ECG was mixed with the real NSTDB
+noise records at an **exactly requested target SNR**.  The mixer
+re-scales the noise to hit the target to within ~1e-15 dB: the
+experiment prints `Mixer accuracy: max |achieved - target| = 3.55e-15 dB`
+and the per-cell `achieved_snr_db` column is verified by
+`tests/test_real_experiment.py::test_real_achieved_snr_matches_target`
+(asserts deviation < 1e-6 dB).
+
+**Reproducibility — 5 segments per cell.**  Every cell (3 noise types ×
+6 SNR levels) was evaluated on **5 independent noise segments per ECG
+record** (segment IDs 0–4) with per-segment reproducible seeds
+(`np.random.default_rng([seed, seg, target+100, name lengths])`), so the
+aggregates are means over 5 windows per cell, not one noisy sample.
+Run: `run_real_experiment.py --download --segments 5 --seed 3`.
+Result: **1,080 segment rows** (5 × 3 noise × 6 SNR × 2 ECG records × 6
+methods); all 6 SNR levels and all 3 noise types present (asserted by
+`test_real_segments_have_at_least_five_per_cell` and
+`test_real_segments_cover_all_snr_levels_and_noise_types`); 108 summary
+rows asserted by `test_real_summary_has_a_row_per_cell_and_method`.
+
+Mean SNR improvement (dB) per cell, averaged over the 5 segments and
+both records:
 
 | Target SNR | Bandpass 0.5–40 | Combined | Median | FFT soft-thr. | Notch 50 Hz |
 |---:|---:|---:|---:|---:|---:|
-| −6 dB | **+8.42** | **+10.70** | +8.94 | +8.28 | +0.01 |
-| 0 dB | **+6.36** | **+7.97** | +6.55 | +5.98 | +0.01 |
-| +6 dB | **+6.73** | +6.65 | +6.24 | +4.94 | +0.01 |
-| +12 dB | **+2.02** | +1.89 | +1.66 | −0.62 | +0.02 |
-| +18 dB | −2.10 | −2.73 | −2.12 | −6.75 | −0.02 |
-| +24 dB | −7.58 | −8.49 | −7.79 | −12.64 | −0.12 |
+| −6 dB | **+8.22** | +9.67 | +8.65 | +9.14 | +0.01 | 0.00 |
+| 0 dB | **+6.04** | +6.78 | +5.21 | +6.66 | +0.00 | 0.00 |
+| +6 dB | **+3.76** | +3.65 | +1.73 | +3.94 | +0.00 | 0.00 |
+| +12 dB | **−0.31** | −0.73 | −3.19 | −0.26 | −0.01 | 0.00 |
+| +18 dB | −5.13 | −5.89 | −8.76 | −5.24 | −0.04 | 0.00 |
+| +24 dB | −10.77 | −11.70 | −14.71 | −10.96 | −0.16 | 0.00 |
+
+These are means over 5 segments per cell (2 records × 3 noise types).
 
 What this shows, including the uncomfortable part:
 
 - **Gains are positive and largest at low SNR** (−6 … +6 dB), where there
   is real noise to remove — the physically expected behaviour.
-- **Gains become negative at high SNR** (+18, +24 dB). When the recording
-  is already clean, filtering removes signal content along with almost no
-  noise, so it costs more than it gains. Reporting only the low-SNR rows
-  would be cherry-picking; the losses are shown deliberately.
+- **Gains become negative at high SNR** (+12, +18, +24 dB). When the
+  recording is already clean, filtering removes signal content along with
+  almost no noise, so it costs more than it gains. Reporting only the
+  low-SNR rows would be cherry-picking; the losses are shown deliberately.
 - **The notch alone is essentially neutral across the whole range**
-  (−0.12 … +0.02 dB), because powerline is only one of three noise
+  (−0.16 … +0.01 dB), because powerline is only one of three noise
   sources here.
 - **NRMSE falls monotonically with SNR** for the bandpass
-  (0.189 → 0.104 → 0.053 → 0.037 → 0.031 → 0.030), so the error metric
+  (0.177 → 0.108 → 0.068 → 0.056 → 0.050 → 0.049), so the error metric
   agrees with the SNR metric about ordering the operating points.
-- By noise category, the bandpass averages +6.20 dB on baseline wander,
-  +2.31 dB on muscle artifact, and −0.99 dB on electrode motion artifact —
-  electrode motion is the hardest class, consistent with the NSTDB
-  documentation noting it "can mimic the appearance of ectopic beats and
-  cannot be removed easily by simple filters."
+- By noise category, the bandpass averages **+15.61 dB on baseline
+  wander, +2.96 dB on electrode motion, and +6.08 dB on muscle
+  artifact** — electrode motion is the hardest class, consistent with
+  the NSTDB documentation noting it "can mimic the appearance of ectopic
+  beats and cannot be removed easily by simple filters."
 
 Plots: `outputs/real/snr_improvement_by_snr.png`,
 `nrmse_by_snr.png`, `rpeak_sensitivity_by_snr.png`,

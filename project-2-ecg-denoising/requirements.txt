@@ -2,5 +2,8 @@ numpy>=1.24
 scipy>=1.10
 matplotlib>=3.7
 
+# Tabular aggregation of segment-level results (run_real_experiment.py)
+pandas>=2.0
+
 # Real PhysioNet NSTDB / MIT-BIH data loading
 wfdb>=4.0

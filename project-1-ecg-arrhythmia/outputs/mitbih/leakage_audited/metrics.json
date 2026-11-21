@@ -51,7 +51,7 @@
       "233",
       "234"
     ],
-    "protocol_description": "Leakage-audited: 202 excluded from test (same subject as 201 in train)"
+    "protocol_description": "Leakage-audited: 202 excluded from test (same subject as 201 in train); verify_no_leakage asserts no shared subject between train and test"
   },
   "preprocessing": {
     "lowcut_hz": 0.5,

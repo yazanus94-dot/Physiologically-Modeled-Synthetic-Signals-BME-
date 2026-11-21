@@ -67,10 +67,10 @@ Each project folder is self-contained:
 | 1 | MIT-BIH (44 records) | R-peak detection (±50 ms, one-to-one) | sens 0.9434 / prec 0.9560 / F1 0.9497, mean timing error 3.79 ms |
 | 1 | MIT-BIH, classic DS1/DS2 | beat classification (Logistic Regression) | balanced acc. 0.7063, macro-F1 0.5581 |
 | 1 | MIT-BIH, leakage-audited | beat classification (Logistic Regression) | balanced acc. 0.7081, macro-F1 0.5689 |
-| 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at −6 dB | **+8.42 dB** (combined pipeline +10.70 dB) |
-| 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at +24 dB | **−7.58 dB** (filtering an already-clean signal costs more than it gains) |
-| 3 | BIDMC (3 records) | mean HR difference, HRV vs PRV | **−0.40 %**, beat agreement 97.4 % |
-| 3 | BIDMC (3 records) | SDNN / RMSSD / LF-HF difference | 57.99 % / 69.37 % / 506.50 % (reported as a finding, not smoothed away) |
+| 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at −6 dB | **+8.22 dB** (combined pipeline +9.67 dB) |
+| 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at +24 dB | **−10.77 dB** (filtering an already-clean signal costs more than it gains) |
+| 3 | BIDMC (3 records) | mean HR difference, HRV vs PRV | **−0.45 %**, beat agreement 97.4 % |
+| 3 | BIDMC (3 records) | SDNN / RMSSD / LF-HF difference | 69.94 % / 81.59 % / 506.56 % (reported as a finding, not smoothed away) |
 
 **Read the caveats in each project README** — why these numbers must not
 be read as clinical performance, and which failure modes are kept in the
@@ -98,12 +98,19 @@ cd project-3-ppg-hrv/src        && python run_pipeline.py              && cd ../
 cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protocol classic         && cd ../..
 cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protocol leakage_audited && cd ../..
 cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode rpeaks                            && cd ../..
-cd project-2-ecg-denoising/src  && python run_real_experiment.py --download                        && cd ../..
+#   (optional) record-grouped hyperparameter tuning, on demand:
+cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protocol classic --cv     && cd ../..
+cd project-2-ecg-denoising/src  && python run_real_experiment.py --download --segments 5 --seed 3  && cd ../..
 cd project-3-ppg-hrv/src        && python run_bidmc_experiment.py --download                       && cd ../..
 
-# tests (189 total: 136 + 24 + 29)
+# tests (200 total: 140 + 28 + 32)
 pytest project-1-ecg-arrhythmia/tests project-2-ecg-denoising/tests project-3-ppg-hrv/tests
 ```
+
+Note: `--segments 5` is the default real-run configuration for Project 2
+(5 independent noise segments per noise-type × SNR cell).  Record-grouped
+cross-validation in Project 1 is available via `--cv`; it is off by
+default because beat-level shuffled CV is deliberately unavailable.
 
 Every pipeline writes its metrics (`metrics.json` / `*.csv`) and plots
 (`*.png`) to its own `outputs/` folder. CI runs the same three test

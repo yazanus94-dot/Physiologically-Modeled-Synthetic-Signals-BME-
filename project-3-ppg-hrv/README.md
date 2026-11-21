@@ -153,66 +153,80 @@ agreement is most fragile.
 
 ### Real PhysioNet BIDMC — ECG-derived HRV vs PPG-derived PRV
 
-3 records, `bidmc01`–`bidmc03`, 480 s each at 125 Hz. R-peaks from WFDB
-`XQRS` on lead II; pulse peaks from this project's own detector on
-`PLETH`.
+3 records, `bidmc01`–`bidmc03`, 480 s each at 125 Hz (well above the
+300 s minimum-analysis-duration floor).  R-peaks from WFDB `XQRS` on
+lead II (an **automated** detector — see `reference_kind.ecg_hrv` in
+`outputs/real/metrics.json`); pulse peaks from this project's own
+detector on `PLETH` with **local adaptive thresholds** and one-to-one
+matching.  All variability is derived from these automated reference
+peaks, and HRV ≠ PRV throughout.
 
 | Record | HR ECG (bpm) | HR PPG (bpm) | SDNN ECG (ms) | SDNN PPG (ms) | Agreement | r (beat) | r (10 s smoothed) | lag (s) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | bidmc01 | 91.29 | 91.15 | 25.78 | 31.55 | 99.7 % | 0.514 | 0.528 | 0.50 |
-| bidmc02 | 91.00 | 90.77 | 16.94 | 43.73 | 99.0 % | 0.480 | 0.614 | 0.20 |
-| bidmc03 | 77.00 | 76.38 | 63.16 | 59.01 | 93.4 % | 0.513 | 0.651 | 0.70 |
+| bidmc02 | 91.00 | 90.64 | 16.94 | 50.43 | 98.9 % | 0.399 | 0.614 | 0.20 |
+| bidmc03 | 77.00 | 76.38 | 63.16 | 56.67 | 93.6 % | 0.484 | 0.651 | 0.70 |
 
 Aggregate (mean over the 3 records):
 
 | Metric | Value |
 |---|---:|
-| Mean HR difference (PRV vs HRV) | **−0.40 %** |
+| Mean HR difference (PRV vs HRV) | **−0.45 %** |
 | Beat agreement within tolerance | **97.4 %** |
-| Interval-series Pearson r (lag-corrected) | 0.502 |
-| Interval-series Pearson r (after 10 s smoothing) | 0.598 |
+| Interval-series Pearson r (lag-corrected) | 0.466 |
+| Interval-series Pearson r (after 10 s smoothing) | 0.568 |
 | Mean inter-channel alignment lag | 0.47 s |
-| Mean SDNN difference | 57.99 % |
-| Mean RMSSD difference | 69.37 % |
-| Mean LF/HF ratio difference | 506.50 % |
+| Mean SDNN difference | 69.94 % |
+| Mean RMSSD difference | 81.59 % |
+| Mean LF/HF ratio difference | 506.56 % |
 
-Independent cross-check against the bedside monitor's own 1 Hz numerics
-(not used anywhere in the computation):
+Time-aligned monitor-reference comparisons (both series on a common
+1 Hz grid over the overlap window, no extrapolation; MAE / bias and
+Bland-Altman 95% limits of agreement).  The monitor is the
+**automated bedside-monitor algorithm** (1 Hz numerics), not manual
+beat annotation — the `reference_note` field states this explicitly:
+
+| Record | ECG-derived HR vs monitor (MAE \| bias) | PPG-derived HR vs monitor (MAE \| bias) |
+|---|---|---|
+| bidmc01 | 1.12 \| +0.13 | 1.34 \| −0.18 |
+| bidmc02 | 1.07 \| −0.09 | 2.20 \| −0.21 |
+| bidmc03 | 2.85 \| +1.03 | 1.97 \| −0.01 |
+
+Independent cross-check against the monitor's own 1 Hz numerics (not
+used anywhere in the computation), time-aligned the same way:
 
 | Record | Monitor HR | Monitor pulse | This run (ECG) | This run (PPG) |
 |---|---:|---:|---:|---:|
 | bidmc01 | 91.32 | 91.01 | 91.29 | 91.15 |
-| bidmc02 | 91.07 | 90.66 | 91.00 | 90.77 |
+| bidmc02 | 91.07 | 90.66 | 91.00 | 90.64 |
 | bidmc03 | 76.64 | 75.89 | 77.00 | 76.38 |
 
 **Reading these honestly:**
 
-- **Mean heart rate agrees closely** (−0.40 %, and within 0.1 bpm of the
+- **Mean heart rate agrees closely** (−0.45 %, within 0.1 bpm of the
   monitor's own numerics in all three records) and **97.4 % of beats
-  match** within tolerance. Both series are measuring the same heart
+  match** within tolerance.  Both series are measuring the same heart
   rate.
 - **Variability metrics do *not* agree**, and this is reported as a
-  finding rather than smoothed away. The divergence is dominated by
-  `bidmc02` (PPG SDNN 43.7 ms vs ECG SDNN 16.9 ms) and `bidmc03` (20
-  ECG intervals rejected out of 622 as out-of-range/ectopic, which
-  deflates the ECG SDNN relative to PPG). `bidmc03` is also the record
-  with the most disagreement flags (35 uncertain, 4 missed-pulse
-  suspects, 1 false-peak suspect) and the lowest beat agreement (93.4 %).
-- **Beat-to-beat correlation is moderate (0.48–0.51) and rises to
-  0.53–0.65 after 10 s smoothing.** Both interval series have a lag-1
-  autocorrelation near zero or negative (−0.27 … +0.12 for ECG RR,
-  −0.30 … −0.03 for PPG PI), i.e. each is dominated by *independent*
-  beat-to-beat peak-timing jitter rather than by shared physiology.
-  Independent noise does not cancel, so the raw correlation is bounded by
-  the ratio of shared variance to total variance. Averaging over 10 s
-  suppresses that uncorrelated jitter and exposes the shared heart-rate
-  trend. **Both numbers are reported; neither is presented alone.**
-- **LF/HF differs by 506 % on average** — with ratios this small and
+  finding rather than smoothed away.  The divergence is dominated by
+  `bidmc02` (PPG SDNN 50.4 ms vs ECG SDNN 16.9 ms) and `bidmc03` (20
+  ECG intervals rejected out of 623 as out-of-range, which deflates the
+  ECG SDNN relative to PPG).  `bidmc03` is the record with the lowest
+  beat agreement (93.6 %).
+- **Beat-to-beat correlation is moderate (0.40–0.51) and rises to
+  0.57–0.65 after 10 s smoothing.**  Both interval series are
+  dominated by independent beat-to-beat peak-timing jitter rather than
+  by shared physiology.  Independent noise does not cancel, so the
+  raw correlation is bounded by the ratio of shared variance to total
+  variance.  Averaging over 10 s suppresses the uncorrelated jitter
+  and exposes the shared heart-rate trend.  **Both numbers are
+  reported; neither is presented alone.**
+- **LF/HF differs by ~506 % on average** — with ratios this small and
   bands this narrow over only 8 minutes of data, a percentage difference
   is a very unstable quantity (per-record values: +1453 %, +137 %,
-  −70 %). The absolute band powers are in `outputs/real/metrics.json`;
-  this number should be read as "the two disagree substantially", not as
-  a calibrated error.
+  −70 %).  The absolute band powers are in
+  `outputs/real/metrics.json`; this number should be read as "the two
+  disagree substantially", not as a calibrated error.
 
 Plots: `outputs/real/tachogram_bidmc0{1,2,3}.png`,
 `hrv_prv_bars.png`, `example_waveforms.png`.

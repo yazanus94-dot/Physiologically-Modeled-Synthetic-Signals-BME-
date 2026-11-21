@@ -92,7 +92,6 @@ def test_train_model_lr():
 
     config = ModelConfig(model_type="logistic_regression", C=1.0, max_iter=500)
     model, info = train_model(X, y, config)
-
     assert hasattr(model, "predict")
     assert info["n_train_samples"] == 100
 
@@ -298,6 +297,62 @@ def test_per_record_skips_single_class_records():
                               y_true, record_ids, class_names)
     assert "single" not in res["per_record"]
     assert "multi" in res["per_record"]
+
+
+# ---------------------------------------------------------------------------
+# Record-grouped (patient-level) cross-validation (P1.5)
+# ---------------------------------------------------------------------------
+
+def test_use_cv_requires_groups():
+    """use_cv=True without record groups must fail loudly.
+
+    Beat-level shuffled cross-validation leaks patient identity across
+    folds, so it is deliberately unavailable.  Trainers must pass the
+    record id of each sample; a missing ``groups`` is an error, not a
+    silent fallback to the old leaky behaviour.
+    """
+    np.random.seed(0)
+    X = np.random.randn(40, 5)
+    y = np.random.choice(["N", "V", "S"], size=40, p=[0.7, 0.15, 0.15])
+    config = ModelConfig(model_type="random_forest", n_estimators=10,
+                         use_cv=True)
+    with pytest.raises(ValueError, match="groups"):
+        train_model(X, y, config)
+
+
+def test_use_cv_rejects_mismatched_group_length():
+    np.random.seed(0)
+    X = np.random.randn(40, 5)
+    y = np.random.choice(["N", "V", "S"], size=40)
+    config = ModelConfig(model_type="random_forest", n_estimators=10,
+                         use_cv=True)
+    with pytest.raises(ValueError, match="length"):
+        train_model(X, y, config, groups=np.asarray(["r0"] * 39))
+
+
+def test_use_cv_rejects_single_record():
+    """One distinct record gives no validation folds to hold out."""
+    np.random.seed(0)
+    X = np.random.randn(20, 5)
+    y = np.random.choice(["N", "V", "S"], size=20)
+    config = ModelConfig(model_type="random_forest", n_estimators=10,
+                         use_cv=True)
+    with pytest.raises(ValueError, match="records"):
+        train_model(X, y, config, groups=np.asarray(["only"] * 20))
+
+
+def test_use_cv_records_grouped_scheme():
+    """With groups, the cv scheme is recorded as record-grouped."""
+    np.random.seed(0)
+    X = np.random.randn(60, 5)
+    y = np.random.choice(["N", "V", "S"], size=60, p=[0.7, 0.15, 0.15])
+    # 8 distinct records
+    groups = np.asarray([f"rec{i % 8}" for i in range(60)])
+    config = ModelConfig(model_type="random_forest", n_estimators=10,
+                         use_cv=True)
+    model, info = train_model(X, y, config, groups=groups)
+    assert info.get("cv_scheme") == "record-grouped (GroupKFold)"
+    assert info.get("cv_n_groups") == 8
 
 
 if __name__ == "__main__":

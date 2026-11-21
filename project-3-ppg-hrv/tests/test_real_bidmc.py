@@ -292,6 +292,63 @@ def test_detect_peaks_on_regular_train_is_regular():
 
 
 # ---------------------------------------------------------------------------
+# Peak matching is strictly one-to-one (regression for the old bug)
+# ---------------------------------------------------------------------------
+
+def test_score_detector_one_to_one_never_overcounts():
+    """A detection may match at most one reference peak.
+
+    Regression: the old implementation looped over reference peaks, picked
+    the nearest detection, and never checked whether that detection had
+    already been claimed.  ``det=[100], truth=[95, 100, 105]`` all mapped
+    to the single detection at 100, so TP became 3 > len(detected)=1 and
+    precision reported 3.0.
+    """
+    from peak_detect import score_detector, match_peaks_one_to_one
+    det = np.array([100])
+    truth = np.array([95, 100, 105])
+    m = match_peaks_one_to_one(det, truth, fs=125.0, tolerance_s=0.01)
+    assert len(m) <= min(det.size, truth.size)
+    assert all(j in {0} for j, _i, _e in m)   # at most one detection used
+
+    s = score_detector(det, truth, fs=125.0, tolerance_s=0.01)
+    assert s["precision"] <= 1.0
+    assert s["tp"] <= det.size
+    assert s["tp"] <= truth.size
+    # here: only the detection at 100 (truth index 1) matches; 95/105 are
+    # 2 ms away, truth index 0/2 also match the same detection... the
+    # closest-first ordering must resolve to a single pair per detection.
+    assert s["tp"] >= 1
+
+
+def test_score_detector_one_to_one_excludes_double_matches():
+    """Two truth peaks claiming the same detection: only the closest wins."""
+    from peak_detect import score_detector
+    # a single detection, two truth peaks inside tolerance of it
+    det = np.array([100])
+    truth = np.array([99, 101])     # both within ±2 ms of the detection
+    s = score_detector(det, truth, fs=125.0, tolerance_s=0.016)  # ~2 ms
+    assert s["tp"] <= 1, s
+    assert s["precision"] <= 1.0
+
+
+def test_local_threshold_curve_length_and_finiteness():
+    """The local adaptive height threshold is per-sample and finite."""
+    from peak_detect import _local_height_threshold
+    fs = 125.0
+    t = np.arange(int(300 * fs)) / fs
+    # drifting amplitude so local vs global differ
+    sig = 0.1 * (0.5 + np.sin(2 * np.pi * t))
+    sig = sig.astype(float)
+    h = _local_height_threshold(sig, fs)
+    assert h is not None
+    assert h.shape == sig.shape
+    assert np.all(np.isfinite(h))
+    # short record returns None (no local stats) -> global fallback
+    assert _local_height_threshold(sig[: int(fs)], fs) is None
+
+
+# ---------------------------------------------------------------------------
 # HRV metrics from an explicit interval series
 # ---------------------------------------------------------------------------
 

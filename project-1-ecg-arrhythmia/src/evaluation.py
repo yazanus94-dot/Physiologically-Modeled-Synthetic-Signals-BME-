@@ -54,11 +54,11 @@ def get_classic_split() -> EvaluationSplit:
     """
     Get the classic DS1/DS2 split as published in literature.
 
-    DS1 = training (22 records)
-    DS2 = testing (22 records)
-
     Note: Records 201 and 202 are from the same subject, which creates
-    potential data leakage in the classic split.
+    potential data leakage between DS1 (201 is in the training pool) and
+    DS2 (202 is in the test set).  Classic is the "as published"
+    benchmark; see ``get_leakage_audited_split`` for the variant where
+    that leakage is guaranteed removed.
     """
     # Use a subset of DS1 for validation (hold out ~20%)
     # Group by subject to avoid leakage within DS1
@@ -76,12 +76,17 @@ def get_classic_split() -> EvaluationSplit:
 
 def get_leakage_audited_split() -> EvaluationSplit:
     """
-    Get leakage-audited split.
+    Get the leakage-audited split.
 
-    Ensures no subject appears in both training and testing.
-    Since 201 and 202 are from the same subject:
+    Ensures no subject appears in both training and testing.  Since
+    201 and 202 are from the same subject:
     - Keep 201 in training (it's in DS1)
     - Exclude 202 from test set (it's in DS2)
+
+    The exclusion is *audited at runtime*: the split is built from the
+    classic protocol and ``verify_no_leakage`` is called on it, raising
+    if any subject is shared between train and test rather than assuming
+    the exclusion is sufficient.
     """
     # Start with classic split
     classic = get_classic_split()
@@ -89,13 +94,22 @@ def get_leakage_audited_split() -> EvaluationSplit:
     # Remove 202 from test set
     test_records = [r for r in classic.test_records if r != "202"]
 
-    return EvaluationSplit(
+    audited = EvaluationSplit(
         train_records=classic.train_records,
         val_records=classic.val_records,
         test_records=test_records,
         protocol="leakage_audited",
-        description="Leakage-audited: 202 excluded from test (same subject as 201 in train)"
+        description=("Leakage-audited: 202 excluded from test (same "
+                     "subject as 201 in train); "
+                     "verify_no_leakage asserts no shared subject between "
+                     "train and test"),
     )
+    ok = verify_no_leakage(audited.train_records, audited.test_records)
+    if not ok:
+        raise RuntimeError(
+            "leakage audit failed for leakage_audited split: a subject "
+            "appears in both train and test")
+    return audited
 
 
 def get_subject_for_record(record: str) -> str:

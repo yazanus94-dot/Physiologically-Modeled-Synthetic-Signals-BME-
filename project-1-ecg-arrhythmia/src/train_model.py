@@ -14,7 +14,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.model_selection import GridSearchCV, GroupKFold
 from sklearn.metrics import (
     classification_report, confusion_matrix, balanced_accuracy_score,
     f1_score, precision_recall_fscore_support
@@ -90,7 +90,8 @@ def train_model(
     y_train: np.ndarray,
     config: ModelConfig,
     X_val: Optional[np.ndarray] = None,
-    y_val: Optional[np.ndarray] = None
+    y_val: Optional[np.ndarray] = None,
+    groups: Optional[np.ndarray] = None
 ):
     """
     Train model with given configuration.
@@ -105,6 +106,10 @@ def train_model(
         Model configuration
     X_val, y_val : np.ndarray, optional
         Validation data (for early stopping / model selection)
+    groups : array-like, optional
+        One group label per training sample — the record (patient) each
+        beat came from.  Required whenever ``config.use_cv`` is set:
+        cross-validation must hold out whole records, never random beats.
 
     Returns
     -------
@@ -122,12 +127,47 @@ def train_model(
         "class_counts": {c: int(np.sum(y_train == c)) for c in np.unique(y_train)}
     }
 
-    if config.use_cv and X_val is not None:
-        # Use cross-validation on combined train+val
-        X_combined = np.vstack([X_train, X_val])
-        y_combined = np.concatenate([y_train, y_val])
+    if config.use_cv:
+        # RECORD-GROUPED cross-validation.  Beats from one record are
+        # highly correlated (same patient, same session, same electrode
+        # placement), so a beat-level split that shuffles them across
+        # folds leaks patient identity into the validation fold and
+        # inflates the score.  GroupKFold keeps every beat of a record in
+        # exactly one fold, so each validation fold is a set of patients
+        # the model has not seen.
+        if groups is None:
+            raise ValueError(
+                "config.use_cv=True requires `groups` (the record id of "
+                "each training sample). Record-grouped validation is "
+                "mandatory here: beat-level cross-validation leaks "
+                "patient identity across folds.")
+        groups = np.asarray(groups)
+        if groups.shape[0] != np.asarray(X_train).shape[0]:
+            raise ValueError(
+                "groups length %d != n_train_samples %d"
+                % (groups.shape[0], np.asarray(X_train).shape[0]))
 
-        cv = StratifiedKFold(n_splits=config.cv_folds, shuffle=True, random_state=config.random_state)
+        n_groups = len(np.unique(groups))
+        if n_groups < 2:
+            raise ValueError(
+                "record-grouped CV needs >= 2 distinct records, got %d"
+                % n_groups)
+        n_splits = int(min(config.cv_folds, n_groups))
+        cv = GroupKFold(n_splits=n_splits)
+        train_info["cv_scheme"] = "record-grouped (GroupKFold)"
+        train_info["cv_folds_used"] = n_splits
+        train_info["cv_n_groups"] = int(n_groups)
+
+        if X_val is not None and len(np.asarray(X_val)) > 0:
+            # Keep the caller's held-out validation beats out of the CV
+            # pool entirely — they are a separate patient-level split.
+            X_fit = np.asarray(X_train)
+            y_fit = np.asarray(y_train)
+            g_fit = groups
+        else:
+            X_fit = np.asarray(X_train)
+            y_fit = np.asarray(y_train)
+            g_fit = groups
 
         # For CV, we need to define param grid based on model type
         if config.model_type == "random_forest":
@@ -146,11 +186,15 @@ def train_model(
             model, param_grid, cv=cv, scoring="f1_macro",
             n_jobs=config.n_jobs, verbose=1
         )
-        grid_search.fit(X_combined, y_combined)
+        grid_search.fit(X_fit, y_fit, groups=g_fit)
 
         model = grid_search.best_estimator_
         train_info["cv_best_params"] = grid_search.best_params_
         train_info["cv_best_score"] = float(grid_search.best_score_)
+
+        # Refit on everything the caller handed over (train only; the
+        # separate validation split stays untouched).
+        model.fit(np.asarray(X_train), np.asarray(y_train))
     else:
         model.fit(X_train, y_train)
 

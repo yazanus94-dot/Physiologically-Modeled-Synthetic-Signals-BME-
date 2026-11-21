@@ -182,3 +182,65 @@ def test_zero_mean_helper_leaves_shape_and_differences():
 def test_shape_mismatch_is_rejected():
     with pytest.raises(ValueError):
         compute_segment_metrics(np.zeros(10), np.zeros(11), 250)
+
+
+# ---------------------------------------------------------------------------
+# Real-experiment outputs: coverage and SNR verification
+# ---------------------------------------------------------------------------
+
+REPO = os.path.dirname(os.path.join(os.path.dirname(os.path.abspath(__file__))))
+SEGMENTS_CSV = os.path.join(REPO, "outputs", "real", "results_segments.csv")
+SUMMARY_CSV = os.path.join(REPO, "outputs", "real", "results_summary.csv")
+
+
+def _real_segments():
+    import csv
+    if not os.path.exists(SEGMENTS_CSV):
+        pytest.skip("real NSTDB segment results not present (run the "
+                    "experiment first)")
+    with open(SEGMENTS_CSV, newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+def test_real_segments_have_at_least_five_per_cell():
+    """Every (noise x SNR) cell needs >= 5 independent segments.
+
+    Regression: the first real run produced 1 segment per cell (`--segments`
+    defaulted to 1), so the summary average was a single noisy sample.  With
+    5 segments the mean gain is a 5-sample average with reproducible seeds.
+    """
+    rows = _real_segments()
+    cells = {}
+    for r in rows:
+        cells.setdefault((r["noise_category"], r["target_snr_db"]),
+                         set()).add(r["segment"])
+    assert cells, "results_segments.csv is empty"
+    seg_counts = {c: len(v) for c, v in cells.items()}
+    assert all(n >= 5 for n in seg_counts.values()), seg_counts
+    assert len(cells) >= 3 * 6, "all 3 noise types x 6 SNR levels expected"
+
+
+def test_real_segments_cover_all_snr_levels_and_noise_types():
+    rows = _real_segments()
+    snrs = {r["target_snr_db"] for r in rows}
+    assert snrs == {"-6.0", "0.0", "6.0", "12.0", "18.0", "24.0"}, snrs
+    cats = {r["noise_category"] for r in rows}
+    assert cats == {"baseline_wander", "electrode_motion", "muscle_artifact"}
+
+
+def test_real_achieved_snr_matches_target():
+    """The mixer's achieved SNR must equal the target to ~1e-9 dB."""
+    rows = _real_segments()
+    worst = max(abs(float(r["achieved_snr_db"]) - float(r["target_snr_db"]))
+                for r in rows)
+    assert worst < 1e-6, worst
+
+
+def test_real_summary_has_a_row_per_cell_and_method():
+    import csv
+    if not os.path.exists(SUMMARY_CSV):
+        pytest.skip("results_summary.csv not present")
+    with open(SUMMARY_CSV, newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    cells = {(r["noise_category"], r["target_snr_db"]) for r in rows}
+    assert len(cells) >= 3 * 6

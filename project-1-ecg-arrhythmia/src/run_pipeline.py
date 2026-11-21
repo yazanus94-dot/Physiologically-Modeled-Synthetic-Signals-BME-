@@ -196,7 +196,8 @@ def _plot_synthetic_results(signal, r_true, r_det, det_score, eval_result, feat_
     print(f"Saved plots -> {out_dir}")
 
 
-def run_mitbih_experiment(protocol: str = "classic", fs_target: int = 360):
+def run_mitbih_experiment(protocol: str = "classic", fs_target: int = 360,
+                          use_cv: bool = False):
     """
     Run the real MIT-BIH experiment with AAMI 4-class classification.
 
@@ -206,7 +207,13 @@ def run_mitbih_experiment(protocol: str = "classic", fs_target: int = 360):
         "classic" or "leakage_audited"
     fs_target : int
         Target sampling frequency for resampling (default 360 Hz, native MIT-BIH rate)
+    use_cv : bool
+        If True, tune hyperparameters with RECORD-GROUPED cross-validation
+        (GroupKFold on the record id of each beat) instead of fitting once
+        on the training records.  Beat-level shuffled CV is deliberately
+        not available — it leaks patient identity across folds.
     """
+    run_cv = bool(use_cv)
     print("=" * 60)
     print(f"MIT-BIH EXPERIMENT (protocol: {protocol})")
     print("=" * 60)
@@ -292,9 +299,12 @@ def run_mitbih_experiment(protocol: str = "classic", fs_target: int = 360):
         min_samples_split=5,
         min_samples_leaf=2,
         class_weight="balanced",
+        use_cv=run_cv,
         random_state=42
     )
-    rf_model, rf_train_info = train_model(X_train, y_train, rf_config, X_val, y_val)
+    rf_model, rf_train_info = train_model(
+        X_train, y_train, rf_config, X_val, y_val,
+        groups=np.asarray(train_rec_ids) if run_cv else None)
 
     print("\n5. Training Logistic Regression...")
     lr_config = ModelConfig(
@@ -303,9 +313,12 @@ def run_mitbih_experiment(protocol: str = "classic", fs_target: int = 360):
         penalty="l2",
         solver="lbfgs",
         max_iter=2000,
+        use_cv=run_cv,
         random_state=42
     )
-    lr_model, lr_train_info = train_model(X_train, y_train, lr_config, X_val, y_val)
+    lr_model, lr_train_info = train_model(
+        X_train, y_train, lr_config, X_val, y_val,
+        groups=np.asarray(train_rec_ids) if run_cv else None)
 
     # Evaluate on test set
     print("\n6. Evaluating on test set...")
@@ -640,13 +653,19 @@ def main():
     parser.add_argument("--seed", type=int, default=42, help="Random seed for synthetic")
     parser.add_argument("--duration", type=float, default=600.0, help="Duration in seconds for synthetic")
     parser.add_argument("--fs-target", type=int, default=360, help="Target sampling frequency for MIT-BIH")
+    parser.add_argument("--cv", action="store_true",
+                        help="Tune hyperparameters with record-grouped "
+                             "cross-validation (GroupKFold over records). "
+                             "Off by default; beat-level CV is not offered "
+                             "because it leaks patient identity across folds.")
 
     args = parser.parse_args()
 
     if args.mode == "synthetic":
         run_synthetic_experiment(seed=args.seed, duration_s=args.duration)
     elif args.mode == "mitbih":
-        run_mitbih_experiment(protocol=args.protocol, fs_target=args.fs_target)
+        run_mitbih_experiment(protocol=args.protocol, fs_target=args.fs_target,
+                              use_cv=args.cv)
     elif args.mode == "rpeaks":
         run_rpeak_detection_experiment(protocol=args.protocol)
     else:

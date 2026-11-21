@@ -89,8 +89,9 @@ def parse_args(argv=None):
                         f"{TARGET_SNR_LEVELS})")
     p.add_argument("--duration", type=float, default=30.0,
                    help="seconds per evaluation segment (default 30)")
-    p.add_argument("--segments", type=int, default=1,
-                   help="noise segments per (noise x SNR x record) cell")
+    p.add_argument("--segments", type=int, default=5,
+                   help="independent noise segments per (noise x SNR x "
+                        "record) cell (default 5; the audit requires >= 5)")
     p.add_argument("--channel", type=int, default=0,
                    help="ECG channel index (default 0)")
     p.add_argument("--noise-channel", type=int, default=0,
