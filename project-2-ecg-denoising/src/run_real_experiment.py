@@ -24,7 +24,7 @@ Usage
     python run_real_experiment.py --download --limit 1 --snrs -6 6 12 \
         --duration 20 --segments 1
 
-    # full experiment (all 6 SNR levels, both records, 30 s segments)
+    # full experiment (all 6 SNR levels, both records, 10 s segments)
     python run_real_experiment.py --download
 
     # re-run with data already present (no --download needed)

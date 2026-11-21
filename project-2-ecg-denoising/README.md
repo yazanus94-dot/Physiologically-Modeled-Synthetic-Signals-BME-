@@ -29,7 +29,7 @@ The same five denoising methods now also run on the **MIT-BIH Noise Stress
 Test Database (NSTDB)** from PhysioNet, downloaded into
 `data/physionet/nstdb/` plus `data/physionet/mitdb/`:
 
-- **Clean ECG** comes from real MIT-BIH records (default `100`, `101`),
+- **Clean ECG** comes from real MIT-BIH records (default `118`, `119`),
   so the "clean" reference is a real recording rather than a generator.
 - **Noise** comes from the three real recorded noise records — `bw`
   (baseline wander), `ma` (muscle/EMG artifact), `em` (electrode motion
