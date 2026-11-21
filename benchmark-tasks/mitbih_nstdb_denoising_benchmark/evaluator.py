@@ -25,6 +25,7 @@ test set — evaluation is external to the solution.
 import hashlib
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -74,8 +75,13 @@ def _import_optional(name):
 # Data loading
 # ---------------------------------------------------------------------------
 
-def _load_real_data(records, snrs, segments):
-    """Load real ECG + noise. Returns (cells, loader_info) or None."""
+def _load_real_data(records, snrs, segments, seed=DEFAULT_SEED,
+                    override_dir=None):
+    """Load real ECG + noise. Returns (cells, loader_info) or None.
+
+    ``override_dir`` is passed to the repo loaders as ``data_dir`` (None
+    uses the loaders' default).
+    """
     try:
         if str(P2_SRC) not in sys.path:
             sys.path.insert(0, str(P2_SRC))
@@ -86,20 +92,31 @@ def _load_real_data(records, snrs, segments):
     except Exception:  # noqa: BLE001
         return None, {}
 
+    data_dir = override_dir
+    if data_dir:
+        # Implement `data_dir` by pointing the repo loaders' module-level
+        # directory constants at the requested root.  The loaders derive
+        # paths from these constants at call time (`records_dir` /
+        # `NSTDB_DIR`), so no signature changes are needed.
+        import load_real_ecg as _ecg_mod
+        import load_real_noise as _noise_mod
+        _ecg_mod.DATA_ROOT = data_dir
+        _noise_mod.NSTDB_DIR = os.path.join(data_dir, "nstdb")
     ecg_loaded = load_ecg_records(records, channel=0)
     noise_loaded = load_noise_records(NSTDB_NOISE_RECORDS, channel=0)
     if not ecg_loaded or not noise_loaded:
-        return None, {"ecg": len(ecg_loaded), "noise": len(noise_loaded)}
+        return None, {"ecg": len(ecg_loaded), "noise": len(noise_loaded),
+                      "data_dir": data_dir}
 
     cells = []
-    rng = np.random.default_rng(1234)
+    rng = np.random.default_rng(seed)
     for noise in sorted(noise_loaded, key=lambda d: d["category"]):
         for target in snrs:
             for ecg in ecg_loaded:
                 fs_ecg = ecg["fs"]
                 fs_noise = noise["fs"]
-                n_ecg = round(30.0 * fs_ecg)
-                n_noise = round(30.0 * fs_noise)
+                n_ecg = round(10.0 * fs_ecg)
+                n_noise = round(10.0 * fs_noise)
                 for seg in range(segments):
                     ecg_start = seg * n_ecg
                     if ecg_start + n_ecg > len(ecg["signal"]):
@@ -154,11 +171,12 @@ def _synthetic_cell(seed):
     return clean, noise, fs
 
 
-def _synthetic_cells(snrs, segments):
+def _synthetic_cells(snrs, segments, seed=DEFAULT_SEED):
     cells = []
     for target in snrs:
         for seg in range(segments):
-            clean, noise, fs = _synthetic_cell(1000 + seg * 7 + int(target))
+            clean, noise, fs = _synthetic_cell(
+                1000 + seed * 1009 + seg * 7 + int(target))
             # scale noise so the target SNR holds (power-ratio convention)
             sig_p = float(np.mean(clean ** 2))
             noi_p = float(np.mean(noise ** 2))
@@ -295,13 +313,21 @@ def _digest(x):
 
 
 def _score_structure(out, expected_len):
+    """Structure validity: ndarray, 1-D, non-empty, right shape, finite,
+    and non-degenerate (a constant output is invalid — there is no
+    signal left to denoise)."""
     if not isinstance(out, np.ndarray):
         return False
     if out.ndim != 1 or out.size == 0:
         return False
     if expected_len is not None and out.size != expected_len:
         return False
-    return np.all(np.isfinite(out))
+    if not np.all(np.isfinite(out)):
+        return False
+    # Degenerate constant output (e.g. zeros or flat values) carries no
+    # signal content — reject when the input is long enough to have
+    # variation.  Short synthetic inputs can be legitimately flat.
+    return not (out.size >= 8 and float(np.ptp(out)) <= 0.0)
 
 
 def _score_numerical_validity(out):
@@ -311,11 +337,20 @@ def _score_numerical_validity(out):
     return bool(np.all(np.isfinite(a)) and a.size > 0)
 
 
-def _score_signal_processing(noisy, out, fs):
-    """Score 50 Hz tone suppression (attenuation of a 5 %-amplitude 50 Hz
-    tone added to the input, in dB).  A correct 0.5–40 Hz band-pass
-    suppresses the tone; score is clipped to [0, 30] and normalized."""
+def _score_signal_processing(noisy, out, fs, solution):
+    """Score suppression of **controlled 50 Hz and 60 Hz probe tones**.
+
+    A controlled 5 %-of-input-RMS sinusoid is injected at the *standard*
+    mains frequencies (50 Hz and 60 Hz) on top of the given noisy signal,
+    and the solution is re-run on the probe-injected input.  The score is
+    the attenuation of each probe tone in the output relative to its
+    power in the probe-injected input — clipped to [0, 30] dB and
+    normalized to [0, 1].  A 0.5–40 Hz band-pass suppresses both probes;
+    the raw/wrong-frequency notch leaves them unattenuated (score 0).
+    """
     from scipy.fft import rfft, rfftfreq
+
+    noisy = np.asarray(noisy, dtype=float)
 
     def _bin_pwr(x, f0):
         S = np.abs(rfft(x))
@@ -323,16 +358,31 @@ def _score_signal_processing(noisy, out, fs):
         idx = int(np.argmin(np.abs(f - f0)))
         return float(S[idx] ** 2)
 
-    n = min(int(out.size), int(np.asarray(noisy).size), 4000)
-    in_tone = _bin_pwr(noisy[:n], 50.0)
-    out_tone = _bin_pwr(out[:n], 50.0)
-    if in_tone <= 0:
+    n = min(int(noisy.size), 4000)
+    if n < 16:
         return 0.0
-    att = -10.0 * np.log10(out_tone / in_tone)   # positive => suppressed
-    return float(min(max(att, 0.0), 30.0) / 30.0)
+    a = 0.05 * float(np.sqrt(np.mean(noisy[:n] ** 2)))
+    if not (np.isfinite(a) and a > 0):
+        return 0.0
+    t = np.arange(n) / fs
+
+    supp = []
+    for f0 in (50.0, 60.0):
+        probe = a * np.sin(2 * np.pi * f0 * t)
+        mixed = noisy[:n] + probe
+        try:
+            res = solution.denoise(mixed, fs)
+            out_p = np.asarray(res.signal, dtype=float)
+        except Exception:  # noqa: BLE001
+            return 0.0
+        in_p = _bin_pwr(mixed, f0)
+        out_pwr = _bin_pwr(out_p[:n], f0) if out_p.size >= n else 0.0
+        att = -10.0 * np.log10(out_pwr / in_p) if in_p > 0 else 0.0
+        supp.append(min(max(att, 0.0), 30.0) / 30.0)
+    return float(np.mean(supp))
 
 
-def _score_performance(cells, out_by_idx, detect_fn):
+def _score_performance(cells, out_by_idx, detect_fn, tolerance_ms=DEFAULT_TOLERANCE_MS):
     imps, rmses, nrmss, prds, pears, rpks = [], [], [], [], [], []
     for cell, out in zip(cells, out_by_idx):
         clean = np.asarray(cell["clean"], dtype=float)
@@ -344,7 +394,8 @@ def _score_performance(cells, out_by_idx, detect_fn):
         prds.append(prd(clean, est))
         pears.append(pearson(clean, est))
         det = detect_fn(est, cell["fs"])
-        rpks.append(rpeak_metrics(cell["ref_peaks"], det, cell["fs"]))
+        rpks.append(rpeak_metrics(cell["ref_peaks"], det, cell["fs"],
+                                  tolerance_ms=tolerance_ms))
     mean_imp = _mean(imps)
     # Performance: honest SNR improvement mapped into [0, 1].  Improvement
     # in [-10, +30] dB -> [0, 1] (clipped).
@@ -372,13 +423,41 @@ def _score_performance(cells, out_by_idx, detect_fn):
 def evaluate(solution, records=None, snrs=None, segments=DEFAULT_SEGMENTS,
              seed=DEFAULT_SEED, tolerance_ms=DEFAULT_TOLERANCE_MS,
              data_dir=None):
-    """Run the benchmark on ``solution`` and return the metric dict."""
+    """Run the benchmark on ``solution`` and return the metric dict.
+
+    Parameters
+    ----------
+    solution : object
+        Callable with ``denoise(noisy, fs)`` returning an object with a
+        ``signal`` attribute (or a ndarray).
+    records : list of str
+        ECG records for the real-data mode.
+    snrs : list of float
+        Target SNR levels.
+    segments : int
+        Independent noise segments per cell (default 10).
+    seed : int
+        Seed for the real-data noise window RNG and the synthetic fallback
+        generator.
+    tolerance_ms : float
+        R-peak one-to-one matching tolerance (default 150 ms — the
+        predefined value; not chosen from results).
+    data_dir : str or None
+        PhysioNet data root passed to the repo loaders; ``None`` uses the
+        loader's default.
+    """
     records = list(records or DEFAULT_RECORDS)
     snrs = list(snrs or TARGET_SNR_LEVELS)
 
-    cells, meta = _load_real_data(records, snrs, segments)
+    cells, meta = _load_real_data(records, snrs, segments, seed=seed)
+    if data_dir is not None and cells:
+        # Re-load honouring the caller's data directory (loaders default
+        # when None).
+        cells, meta = _load_real_data(
+            records, snrs, segments, seed=seed,
+            override_dir=data_dir)
     if cells is None or not cells:
-        cells, meta = _synthetic_cells(snrs, segments)
+        cells, meta = _synthetic_cells(snrs, segments, seed=seed)
 
     detect_fn = detect_r_peaks_default
     if P2_SRC.is_dir():
@@ -397,10 +476,12 @@ def evaluate(solution, records=None, snrs=None, segments=DEFAULT_SEGMENTS,
         ok = _score_structure(out, cell["noisy"].size)
         structure_ok = structure_ok and ok
         numerical_valid = numerical_valid and _score_numerical_validity(out)
-        sp_scores.append(_score_signal_processing(cell["noisy"], out, cell["fs"]))
+        sp_scores.append(_score_signal_processing(
+            cell["noisy"], out, cell["fs"], solution))
         outputs.append(out)
 
-    perf, perf_metrics = _score_performance(cells, outputs, detect_fn)
+    perf, perf_metrics = _score_performance(
+        cells, outputs, detect_fn, tolerance_ms=tolerance_ms)
     sp = _mean(sp_scores)
 
     # Reproducibility: run twice on the first cell and compare digests.
@@ -413,26 +494,27 @@ def evaluate(solution, records=None, snrs=None, segments=DEFAULT_SEGMENTS,
                         dtype=float)
         repro_ok = bool(_digest(r1) == _digest(r2))
 
-    # Edge robustness: short segment + zero-power input.
+    # Edge robustness (audit 2.3.2): the solution must not crash and must
+    # return a finite output of the correct shape on a short segment and on
+    # zero-power input.  (A degenerate constant output is acceptable on
+    # degenerate input — what matters is shape/finiteness, not SNR there.)
     edge_ok = True
     try:
         if cells:
             short = np.zeros(16, dtype=float)
             o = solution.denoise(short, 250.0)
-            edge_ok = edge_ok and _score_structure(np.asarray(o.signal, dtype=float),
-                                                   16) or True
+            s = np.asarray(o.signal, dtype=float)
+            edge_ok = edge_ok and (s.size == short.size
+                                   and np.all(np.isfinite(s)))
             zero = np.zeros(int(5 * cells[0]["fs"]), dtype=float)
             o = solution.denoise(zero, cells[0]["fs"])
-            edge_ok = edge_ok and np.all(np.isfinite(np.asarray(o.signal)))
+            z = np.asarray(o.signal, dtype=float)
+            edge_ok = edge_ok and (z.size == zero.size
+                                   and np.all(np.isfinite(z)))
     except Exception:  # noqa: BLE001
         edge_ok = False
 
     # Overall weighted score (scaled to [0, 1] each).
-    def _to_01(x, lo, hi):
-        if not np.isfinite(x):
-            return 0.0
-        return min(max((x - lo) / (hi - lo), 0.0), 1.0)
-
     overall = (
         SCORING_RUBRIC["structure"] * (1.0 if structure_ok else 0.0) +
         SCORING_RUBRIC["numerical_validity"] * (1.0 if numerical_valid else 0.0) +

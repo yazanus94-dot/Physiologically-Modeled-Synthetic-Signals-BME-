@@ -1,7 +1,7 @@
 {
   "experiment": "bidmc_hrv_prv",
   "dataset": "BIDMC PPG and Respiration Dataset (PhysioNet)",
-  "data_dir": "C:\\Users\\Souq AL_Bostan\\Projects\\chart-reasoning-fix\\Physiologically-Modeled-Synthetic-Signals-BME-\\data\\physionet\\bidmc",
+  "data_dir": "data/physionet/bidmc",
   "definitions": {
     "ecg_hrv": "heart-rate variability computed from ECG R-R intervals (WFDB XQRS detector)",
     "ppg_prv": "pulse-rate variability computed from PPG pulse-to-pulse intervals"

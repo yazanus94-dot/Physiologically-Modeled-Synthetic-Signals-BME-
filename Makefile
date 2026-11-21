@@ -10,7 +10,7 @@ PY ?= python
 .PHONY: test synthetic real rpeaks mitbih bidmc
 
 test:
-	$(PY) -m pytest project-1-ecg-arrhythmia/tests project-2-ecg-denoising/tests project-3-ppg-hrv/tests
+	$(PY) -m pytest project-1-ecg-arrhythmia/tests project-2-ecg-denoising/tests project-3-ppg-hrv/tests benchmark-tasks/mitbih_nstdb_denoising_benchmark/tests
 
 # Synthetic experiments (no PhysioNet download required).
 synthetic:

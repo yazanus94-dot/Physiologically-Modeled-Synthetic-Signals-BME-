@@ -52,14 +52,32 @@ the clean signal from the mixture as well as possible.
   (`wfdb.rdann(path, "atr")`) are used **only to locate R-peaks for the
   evaluation of R-peak metrics** — they are *not* training features.
 - **Target SNR levels:** `[-6, 0, 6, 12, 18, 24]` dB.
-- **Train / validation / test separation:** the task ships a fixed
-  **patient-level split**: clean ECG records 118/119 → the evaluator runs
-  over the train/val/test cell structure defined in
-  `evaluator.py` (`TRAIN_ECG_RECORDS`, `TEST_ECG_RECORDS`,
-  `TRAIN_NOISE_RECORDS`, `TEST_NOISE_RECORDS`). The mixed segments are
-  generated deterministically from seeded RNGs.
-- **One-to-one peak matching** at ±150 ms (predefined, never tuned) is
-  used for the R-peak component of the score.
+- **Train / validation / test separation:** **there is none — this is a
+  fixed, independent evaluation protocol.**  The evaluator scores a
+  solution against the *same* clean reference signal on every cell
+  (3 noise × 6 SNR); there is no training step to split, so no
+  train/validation/test cell structure is defined or used.  (A
+  supervised benchmark would need a training set; this task is a
+  denoising-eval task and its specification matches the evaluator.)
+- **Segments and trials:** **10 independent noise segments per
+  (noise × SNR) cell** (`DEFAULT_SEGMENTS = 10`), with the ECG record
+  offset advanced by `seg * n_ecg` per segment and per-segment
+  reproducible noise windows drawn from
+  `np.random.default_rng([seed, seg, target + 100, name lengths])` —
+  the same convention as `project-2-ecg-denoising`'s real experiment.
+- **One-to-one peak matching** at **±150 ms**
+  (`DEFAULT_TOLERANCE_MS = 150.0`, the predefined, never-tuned
+  tolerance; `evaluate(..., tolerance_ms=...)`).
+- **Signal-processing scoring:** controlled **50 Hz and 60 Hz** mains
+  probe tones are injected onto the input (5 % of the input RMS) and the
+  solution is re-run on the probe-injected input; the score is the mean
+  attenuation (clipped to [0, 30] dB, normalized to [0, 1]).
+- **R-peak F1 is a diagnostic, not a scored metric:** it is reported in
+  `performance_metrics` (`mean_rpeak_f1`) and the evaluator's metric
+  list, but not weighted in `SCORING_RUBRIC`.  The six rubric criteria
+  are: structure (15 %), numerical validity (10 %), signal processing
+  (25 %), performance (25 %), reproducibility (15 %), edge robustness
+  (10 %).
 - **DC-offset convention:** waveform-error metrics (`rmse`, `nrmse`, `prd`,
   `snr_db`) are computed after removing the mean from both signals
   (`_zero_mean`) — documented in the reference solution.
