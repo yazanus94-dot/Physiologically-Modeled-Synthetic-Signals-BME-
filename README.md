@@ -70,8 +70,8 @@ Each project folder is self-contained:
 | 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at −6 dB | **+17.00 dB** (combined +18.21 dB) — records **118, 119** |
 | 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at +24 dB | **−6.44 dB** (already-clean cost) |
 | 2 | NSTDB R-peak (bandpass, predefined ±150 ms) | F1 | **0.606** (sens 0.9920 / prec 0.4390) |
-| 3 | BIDMC (3 records) | mean HR difference, HRV vs PRV | **−0.45 %**, beat agreement 97.4 % |
-| 3 | BIDMC (3 records) | SDNN / RMSSD / LF-HF difference | 69.94 % / 81.59 % / 506.56 % (reported as a finding, not smoothed away) |
+| 3 | BIDMC (3 records) | mean HR difference, HRV vs PRV | **−0.40 %**, beat agreement 97.3 % |
+| 3 | BIDMC (3 records) | SDNN / RMSSD / LF-HF difference | 75.82 % / 84.58 % / 506.56 % |
 
 **Read the caveats in each project README** — why these numbers must not
 be read as clinical performance, and which failure modes are kept in the

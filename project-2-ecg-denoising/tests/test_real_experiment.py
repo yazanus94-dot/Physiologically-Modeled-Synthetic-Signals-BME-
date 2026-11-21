@@ -221,6 +221,26 @@ def test_real_segments_have_at_least_ten_per_cell():
     assert len(cells) >= 3 * 6, "all 3 noise types x 6 SNR levels expected"
 
 
+def test_tolerance_sensitivity_analysis():
+    """tolerance_sensitivity.json reports sens/prec/F1 at ±50/100/150 ms."""
+    path = os.path.join(REPO, "outputs", "real", "tolerance_sensitivity.json")
+    if not os.path.exists(path):
+        pytest.skip("tolerance_sensitivity.json not present — run the real "
+                    "experiment first")
+    import json
+    with open(path) as fh:
+        rows = json.load(fh)
+    assert rows, "tolerance_sensitivity.json is empty"
+    tols = sorted({r["tolerance_ms"] for r in rows})
+    assert tols == [50.0, 100.0, 150.0], tols
+    for r in rows:
+        assert 0.0 <= r["rpeak_sensitivity"] <= 1.0
+        assert 0.0 <= r["rpeak_precision"] <= 1.0
+        assert 0.0 <= r["rpeak_f1"] <= 1.0
+    assert os.path.exists(os.path.join(REPO, "outputs", "real",
+                                       "tolerance_sensitivity.png"))
+
+
 def test_real_summary_has_a_row_per_cell_and_method():
     import csv
     if not os.path.exists(SUMMARY_CSV):

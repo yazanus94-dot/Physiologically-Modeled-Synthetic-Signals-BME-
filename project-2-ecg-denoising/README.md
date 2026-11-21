@@ -230,6 +230,67 @@ methodology, `peak_tolerance_ms`, `achieved_snr_db` with
 `verified_achieved_vs_target`, aggregate metrics incl. F1, and
 `powerline_ablation` summary).
 
+### R-peak matching-tolerance sensitivity (P2.1)
+
+The predefined ±150 ms tolerance is used everywhere (§ "Peak matching
+tolerance" above).  Independently of the benchmark-facing result, a
+**tolerance sensitivity analysis** recomputes the bandpass-method R-peak
+metrics at **±50, ±100 and ±150 ms** (outputs/real/tolerance_sensitivity.json +
+tolerance_sensitivity.png), without choosing the "best" — the predefined
+tolerance stays authoritative.  Example (baseline_wander, −6 dB):
+
+| Tolerance | Sensitivity | Precision | F1 | MAE |
+|---:|---:|---:|---:|---:|
+| ±50 ms | 0.818 | 0.290 | 0.429 | 3.09 ms |
+| ±100 ms | 0.909 | 0.323 | 0.476 | 10.28 ms |
+| ±150 ms | 0.909 | 0.323 | 0.476 | 10.28 ms |
+
+The tolerance analysis is covered by
+`tests/test_real_experiment.py::test_tolerance_sensitivity_analysis`.
+
+### SNR conventions (P2.2) — two, deliberately distinguished
+
+Two different conventions appear in the CSVs/JSON, because they are
+different physical quantities:
+
+- **Mixer convention (power ratio, DC-inclusive):** the noise mixer
+  scales the noise so that `SNR_dB = 10·log10(P_signal / P_noise)` with
+  `P = mean(x²)` (`noise_mixer.py:14–18, 74–94`).  Stored per row as
+  `achieved_snr_db` (renamed, canonical, as
+  `achieved_power_ratio_snr_db` in the same rows) and
+  `achieved_power_ratio_snr_db`.
+- **Waveform-error convention (AC, DC-removed):** the waveform metrics
+  (`rmse`, `nrmse`, `prd`, `snr_db`) are computed after removing the mean
+  from **both** the reference and the estimate (`_zero_mean`).
+  Stored per row as `input_ac_snr_db` (DC-removed SNR of the mixture),
+  `output_ac_snr_db` (DC-removed SNR of the denoised output) and
+  `snr_improvement_ac_db = output − input`.
+
+Both conventions are recorded in the aggregate
+(`input_ac_snr_db_mean/std`, `output_ac_snr_db_mean/std`,
+`snr_improvement_ac_db_mean/std`) and both are pinned in
+`metrics.json.versions` + `peak_tolerance_ms` + `verified_achieved_vs_target`.
+
+### Reproducible experiment report (P2.4)
+
+- `outputs/real/report.json` — full provenance (records 118/119,
+  methodology, tolerance, versions, aggregate stats).
+- `outputs/real/report/report_waveforms.png` — clean, noisy, denoised
+  (bandpass) and error waveform for the panel segment (DC-removed).
+- `outputs/real/report/report_rpeak.png` — R-peak overlay: clean
+  signal + reference peaks (`.atr`) + detected peaks of the bandpass
+  method.
+
+### Optional expanded evaluation (P2.3)
+
+An optional expanded run on additional annotated MIT-BIH records can be
+run with `--extra-records "207,214"`; results are written to a
+**separate** directory `outputs/real_expanded/` — the primary benchmark
+(records 118/119) is never mixed into or overwritten.  Rows are tagged
+`protocol_tag="expanded_extra"` and every row carries its ECG/noise
+record IDs (`ecg_record`, `noise_record`, `noise_category`), so the two
+benchmarks stay separately identifiable.
+
 ## Project structure
 
 ```

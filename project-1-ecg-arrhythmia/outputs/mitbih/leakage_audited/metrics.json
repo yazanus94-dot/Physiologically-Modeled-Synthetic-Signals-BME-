@@ -1940,5 +1940,20 @@
       "beat_kurtosis": 0.43026386824755297,
       "r_amp_rel": 0.376605752980882
     }
-  }
+  },
+  "versions": {
+    "python": "3.14.7",
+    "python_implementation": "CPython",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "pandas": "2.3.3",
+    "wfdb": "4.3.1",
+    "matplotlib": "3.11.2",
+    "scikit_learn": "1.9.1",
+    "joblib": "1.6.0",
+    "seaborn": "0.13.2"
+  },
+  "seed": 42,
+  "random_seed_note": "Deterministic: fixed records, RF/LR random_state=42; no unseeded RNG."
 }

@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "physiologically-modeled-synthetic-signals-bme"
+version = "1.0.0"
+description = "Portfolio of three biomedical signal-processing projects: ECG arrhythmia classification (synthetic + real MIT-BIH), ECG denoising (synthetic + real NSTDB), PPG heart-rate variability (synthetic + real BIDMC)."
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.24",
+    "scipy>=1.10",
+    "matplotlib>=3.7",
+    "pandas>=2.0",
+    "scikit-learn>=1.3",
+    "joblib>=1.3",
+    "wfdb>=4.0",
+    "seaborn>=0.12",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=7.0", "hypothesis>=6.0"]
+
+[tool.pytest.ini_options]
+# Each project's tests run in the same process (module names are unique).
+testpaths = ["project-1-ecg-arrhythmia/tests",
+             "project-2-ecg-denoising/tests",
+             "project-3-ppg-hrv/tests"]

@@ -50,7 +50,8 @@ from denoise_methods import (bandpass_filter, combined_pipeline,
                              snr_db)
 from noise_mixer import TARGET_SNR_LEVELS, mix_to_snr
 from evaluate_denoising import (DEFAULT_PEAK_TOLERANCE_S, aggregate_metrics,
-                                compute_segment_metrics, _zero_mean)
+                                compute_segment_metrics, _zero_mean,
+                                detect_r_peaks, rpeak_metrics)
 from load_real_ecg import (MITDB_DIR, download_records as download_ecg,
                            is_downloaded as ecg_is_downloaded,
                            list_remote_records, load_ecg_records,
@@ -62,7 +63,9 @@ from load_real_noise import (NOISE_CATEGORIES, NOISE_CATEGORY_BY_RECORD,
                              local_records as local_noise_records)
 from visualization import (plot_metric_by_snr, plot_sample_comparison,
                            plot_metric_summary, plot_morphology_summary,
-                           plot_noise_type_comparison, plot_powerline_ablation)
+                           plot_noise_type_comparison, plot_powerline_ablation,
+                           plot_tolerance_sensitivity,
+                           plot_report_waveforms, plot_report_rpeak)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(HERE)
@@ -72,7 +75,9 @@ DEFAULT_ECG_RECORDS = ["118", "119"]   # MIT-BIH records 118 & 119 (with .atr an
 SUMMARY_METRICS = ["snr_db", "snr_improvement_db", "rmse", "nrmse", "prd",
                    "pearson", "rpeak_sensitivity", "rpeak_precision",
                    "rpeak_f1", "rpeak_mae_ms",
-                   "qrs_amp_rel_change", "qrs_width_rel_change"]
+                   "qrs_amp_rel_change", "qrs_width_rel_change",
+                   "input_ac_snr_db", "output_ac_snr_db",
+                   "snr_improvement_ac_db"]
 
 
 def parse_args(argv=None):
@@ -109,6 +114,12 @@ def parse_args(argv=None):
                    help="powerline notch frequency (default 50)")
     p.add_argument("--outdir", default=DEFAULT_OUTDIR,
                    help="output directory for CSV + figures")
+    p.add_argument("--extra-records", default=None,
+                   help="comma-separated additional annotated MIT-BIH "
+                        "records to run the OPTIONAL expanded evaluation "
+                        "on (results written to outputs/real_expanded/, "
+                        "separately identifiable from the primary "
+                        "benchmark; primary records stay 118/119)")
     p.add_argument("--download", action="store_true",
                    help="download missing PhysioNet data first")
     return p.parse_args(argv)
@@ -254,6 +265,241 @@ def resolve_data(args):
             return None
 
     return ecg_records, noise_by_cat
+
+
+def run_tolerance_sensitivity(args, ecg_loaded, noise_by_cat):
+    """Tolerance sensitivity analysis (P2.1).
+
+    Recomputes R-peak detection for the bandpass method on real
+    NSTDB-mixed segments and reports sensitivity / precision / F1 /
+    mean-absolute-timing-error / FP / FN at **±50, ±100 and ±150 ms**
+    (the predefined tolerance is also reported — the choice is documented,
+    not made on the basis of which is highest).
+
+    Results are written to ``outputs/real/tolerance_sensitivity.json`` and
+    ``tolerance_sensitivity.png``.
+    """
+    noise_loaded = load_noise_records(
+        [noise_by_cat[c] for c in sorted(noise_by_cat)],
+        channel=args.noise_channel)
+    if not noise_loaded:
+        print("[SKIP] tolerance sensitivity analysis: no noise records.")
+        return []
+
+    rows = []
+    seg_budget = 2                       # keep the analysis cheap
+    for noise in noise_loaded:
+        for target in TARGET_SNR_LEVELS:
+            for ecg in ecg_loaded:
+                fs_ecg = ecg["fs"]
+                fs_noise = noise["fs"]
+                n_ecg = int(round(args.duration * fs_ecg))
+                n_noise = int(round(args.duration * fs_noise))
+                for seg in range(min(seg_budget, args.segments)):
+                    ecg_start = seg * n_ecg
+                    ecg_seg = _slice(ecg["signal"], ecg_start, n_ecg)
+                    if ecg_seg is None:
+                        continue
+                    rng = np.random.default_rng(
+                        [args.seed, 9999 + int(target), seg,
+                         len(noise["name"]), len(ecg["name"])])
+                    noise_start = int(rng.integers(
+                        0, max(1, len(noise["signal"]) - n_noise + 1)))
+                    noise_seg = _slice(noise["signal"], noise_start, n_noise)
+                    if noise_seg is None:
+                        noise_seg = noise["signal"][:n_noise]
+                    try:
+                        noisy, _achieved = mix_to_snr(
+                            ecg_seg, noise_seg, float(target),
+                            fs_clean=fs_ecg, fs_noise=fs_noise)
+                    except ValueError:
+                        continue
+                    _rp = ecg.get("r_peaks")
+                    ref_peaks = np.asarray(_rp if _rp is not None else [], dtype=int)
+                    ref_peaks = ref_peaks[(ref_peaks >= ecg_start) &
+                                          (ref_peaks < ecg_start + n_ecg)]
+                    ref_peaks = ref_peaks - ecg_start
+                    est = bandpass_filter(noisy, fs_ecg)
+                    for tol_ms in (50.0, 100.0, 150.0):
+                        m = rpeak_metrics(
+                            ref_peaks, detect_r_peaks(est, fs_ecg), fs_ecg,
+                            tol_ms / 1000.0)
+                        rows.append({
+                            "noise_category": noise["category"],
+                            "noise_record": noise["name"],
+                            "ecg_record": ecg["name"],
+                            "target_snr_db": float(target),
+                            "tolerance_ms": float(tol_ms),
+                            "method": "bandpass_0.5_40hz",
+                            **m,
+                        })
+
+    if not rows:
+        print("[SKIP] tolerance sensitivity: no rows generated.")
+        return rows
+
+    outdir = args.outdir
+    os.makedirs(outdir, exist_ok=True)
+    out_json = os.path.join(outdir, "tolerance_sensitivity.json")
+    with open(out_json, "w") as fh:
+        json.dump(rows, fh, indent=2, default=float)
+    plot_tolerance_sensitivity(rows,
+                               os.path.join(outdir,
+                                            "tolerance_sensitivity.png"))
+    print(f"Saved -> {out_json}")
+    print("Saved figure -> tolerance_sensitivity.png")
+    return rows
+
+
+def run_expanded_eval(args, extra_records):
+    """Expanded evaluation on additional annotated MIT-BIH records.
+
+    Runs the same mixing + denoising + scoring loop as the primary
+    experiment on ``extra_records`` (e.g. records 207, 214) and writes to
+    ``outputs/real_expanded/`` — a **separate** output directory so the
+    original benchmark is never mixed into or overwritten.  Rows carry a
+    ``protocol_tag`` of ``"expanded_extra"`` and record IDs so the two
+    are distinguishable.  The original records (118/119) are unaffected.
+    """
+    outdir = os.path.join(args.outdir, "..", "real_expanded") \
+        if os.path.basename(args.outdir.rstrip("/")) == "real" \
+        else args.outdir.replace("real", "real_expanded")
+    outdir = os.path.abspath(outdir)
+    ecg_loaded = load_ecg_records(extra_records, channel=args.channel)
+    if not ecg_loaded:
+        print(f"[SKIP] expanded eval: no readable ECG records {extra_records}")
+        return 0
+    noise_by_cat = {cat: name for name, cat in discover_noise_records().items()}
+    noise_loaded = load_noise_records(
+        [noise_by_cat[c] for c in sorted(noise_by_cat)],
+        channel=args.noise_channel)
+    if not noise_loaded:
+        print("[SKIP] expanded eval: no noise records.")
+        return 0
+
+    os.makedirs(outdir, exist_ok=True)
+    rows = []
+    for noise in sorted(noise_loaded, key=lambda d: d["category"]):
+        for target in TARGET_SNR_LEVELS:
+            for ecg in ecg_loaded:
+                fs_ecg = ecg["fs"]
+                fs_noise = noise["fs"]
+                n_ecg = int(round(args.duration * fs_ecg))
+                n_noise = int(round(args.duration * fs_noise))
+                for seg in range(args.segments):
+                    ecg_start = seg * n_ecg
+                    ecg_seg = _slice(ecg["signal"], ecg_start, n_ecg)
+                    if ecg_seg is None:
+                        continue
+                    rng = np.random.default_rng(
+                        [args.seed + 1, seg, int(target) + 100,
+                         len(noise["name"]), len(ecg["name"])])
+                    noise_start = int(rng.integers(
+                        0, max(1, len(noise["signal"]) - n_noise + 1)))
+                    noise_seg = _slice(noise["signal"], noise_start, n_noise)
+                    if noise_seg is None:
+                        noise_seg = noise["signal"][:n_noise]
+                    try:
+                        noisy, achieved = mix_to_snr(
+                            ecg_seg, noise_seg, float(target),
+                            fs_clean=fs_ecg, fs_noise=fs_noise)
+                    except ValueError:
+                        continue
+                    _rp = ecg.get("r_peaks")
+                    ref_peaks = np.asarray(_rp if _rp is not None else [], dtype=int)
+                    ref_peaks = ref_peaks[(ref_peaks >= ecg_start) &
+                                          (ref_peaks < ecg_start + n_ecg)]
+                    ref_peaks = ref_peaks - ecg_start
+                    for name, est in run_all_methods(noisy, fs_ecg,
+                                                     args.powerline).items():
+                        try:
+                            metrics = compute_segment_metrics(
+                                ecg_seg, est, fs_ecg,
+                                reference_peaks=ref_peaks, mixture=noisy)
+                        except Exception as exc:  # noqa: BLE001
+                            continue
+                        rows.append({
+                            "noise_category": noise["category"],
+                            "noise_record": noise["name"],
+                            "ecg_record": ecg["name"],
+                            "protocol_tag": "expanded_extra",
+                            "segment": seg,
+                            "target_snr_db": float(target),
+                            "achieved_snr_db": float(achieved),
+                            "method": name,
+                            "duration_s": float(n_ecg / fs_ecg),
+                            "fs": float(fs_ecg),
+                            **metrics,
+                        })
+
+    if not rows:
+        print("[SKIP] expanded eval: no rows generated.")
+        return 0
+    df = pd.DataFrame(rows)
+    df.to_csv(os.path.join(outdir, "results_segments.csv"), index=False)
+    print(f"Saved -> {os.path.join(outdir, 'results_segments.csv')}")
+    print(f"Expanded eval summary -> {outdir}")
+    return 0
+
+
+def generate_report(args, rows, panel, ecg_records, snr_levels, noise_names):
+    """Write ``report.json`` + waveform/error/R-peak report figures
+    (P2.4): clean vs noisy vs denoised + error waveform, and an R-peak
+    overlay for the bandpass method on the panel segment."""
+    outdir = args.outdir
+    os.makedirs(outdir, exist_ok=True)
+    report_dir = os.path.join(outdir, "report")
+    os.makedirs(report_dir, exist_ok=True)
+
+    agg = aggregate_metrics(rows)
+    rr = {
+        "records": list(ecg_records),
+        "nstdb_records": list(noise_names),
+        "target_snr_db": list(snr_levels),
+        "duration_s": float(args.duration),
+        "segments_per_cell": int(args.segments),
+        "seed": int(args.seed),
+        "powerline_hz": float(args.powerline),
+        "peak_tolerance_ms": DEFAULT_PEAK_TOLERANCE_S * 1000.0,
+        "n_rows": len(rows),
+        "aggregate": {k: v for k, v in agg.items()
+                      if isinstance(v, dict) and "mean" in v},
+        "figures": {
+            "report_waveforms": os.path.join(
+                "report", "report_waveforms.png"),
+            "report_rpeak": os.path.join("report", "report_rpeak.png"),
+        },
+    }
+    try:
+        sys.path.insert(0, os.path.join(PROJECT_DIR, os.pardir))
+        from versions import get_versions
+        rr["versions"] = get_versions()
+    except Exception:  # noqa: BLE001
+        rr.pop("versions", None)
+
+    if panel is not None:
+        clean, noisy, methods, fs, achieved, cat, target, rec, ref_peaks = panel
+        plot_report_waveforms(
+            clean, noisy, methods, fs,
+            os.path.join(report_dir, "report_waveforms.png"),
+            achieved=achieved,
+            title=(f"Report — real ECG {rec} + {cat} noise mixed at "
+                   f"{target} dB (achieved {achieved:.2f} dB)"))
+        est = np.asarray(methods.get("bandpass_0.5_40hz", noisy), dtype=float)
+        det_peaks = detect_r_peaks(est, fs)
+        plot_report_rpeak(
+            clean, est, fs,
+            os.path.join(report_dir, "report_rpeak.png"),
+            method="bandpass_0.5_40hz",
+            ref_peaks=np.asarray(ref_peaks, dtype=int),
+            det_peaks=det_peaks,
+            title=(f"Report — R-peak overlay on denoised output "
+                   f"(record {rec}, {cat} @ {target} dB)"))
+    with open(os.path.join(outdir, "report.json"), "w") as fh:
+        json.dump(rr, fh, indent=2, default=float)
+    print(f"Saved -> {os.path.join(outdir, 'report.json')}")
+    print(f"Saved figure -> report/report_waveforms.png")
+    print(f"Saved figure -> report/report_rpeak.png")
 
 
 def run_all_methods(noisy, fs, powerline_hz):
@@ -439,7 +685,7 @@ def run_experiment(args):
                         try:
                             metrics = compute_segment_metrics(
                                 ecg_seg, est, fs_ecg,
-                                reference_peaks=ref_peaks)
+                                reference_peaks=ref_peaks, mixture=noisy)
                         except Exception as exc:  # noqa: BLE001
                             print(f"  [skip] metrics failed for {name}: "
                                   f"{exc}")
@@ -452,6 +698,7 @@ def run_experiment(args):
                             "segment": seg,
                             "target_snr_db": float(target),
                             "achieved_snr_db": float(achieved),
+                            "achieved_power_ratio_snr_db": float(achieved),
                             "method": name,
                             "duration_s": float(n_ecg / fs_ecg),
                             "fs": float(fs_ecg),
@@ -459,6 +706,8 @@ def run_experiment(args):
                         row.update(metrics)
                         row["snr_improvement_db"] = (
                             metrics["snr_db"] - baseline)
+                        row["snr_improvement_ac_db"] = metrics["snr_improvement_ac_db"] \
+                            if np.isfinite(metrics["snr_improvement_ac_db"]) else float("nan")
                         rows.append(row)
 
                     if panel is None:
@@ -466,7 +715,7 @@ def run_experiment(args):
                                  {k: np.asarray(v).copy()
                                   for k, v in methods.items()},
                                  fs_ecg, achieved, noise["category"],
-                                 target, ecg["name"])
+                                 target, ecg["name"], ref_peaks.copy())
 
             print(f"  done: {noise['category']} ({noise['name']}) @ "
                   f"{target} dB -> {len(rows)} rows so far")
@@ -560,17 +809,23 @@ def run_experiment(args):
             title="Real NSTDB noise: R-peak F1 (2·P·S/(P+S)) per method",
             ylabel="F1 = 2·precision·sensitivity/(precision + sensitivity)")
     if panel is not None:
-        clean, noisy, methods, fs, achieved, cat, target, rec = panel
+        clean, noisy, methods, fs, achieved, cat, target, rec, ref_peaks = panel
         plot_sample_comparison(
             clean, noisy, methods, fs,
             os.path.join(args.outdir, "sample_waveforms.png"),
             title=(f"Real ECG {rec} + {cat} noise mixed at {target} dB "
                    f"(first segment)"),
             achieved_snr_db=achieved)
+        # Reproducible experiment report (P2.4)
+        generate_report(args, rows, panel, ecg_records, snr_levels,
+                        noise_names)
 
     # --- powerline ablation (separate experiment, see
     #     run_powerline_ablation: audit item 4) ---
     run_powerline_ablation(args, ecg_loaded)
+
+    # --- tolerance sensitivity analysis (P2.1) ---
+    run_tolerance_sensitivity(args, ecg_loaded, noise_by_cat)
 
     # --- report ---
     n_methods = int(df["method"].nunique())
@@ -617,6 +872,10 @@ def run_experiment(args):
 
 def main(argv=None):
     args = parse_args(argv)
+    if args.extra_records:
+        extra = [r.strip() for r in str(args.extra_records).split(",")
+                 if r.strip()]
+        return run_expanded_eval(args, extra)
     return run_experiment(args)
 
 

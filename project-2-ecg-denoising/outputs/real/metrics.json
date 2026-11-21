@@ -45,7 +45,13 @@
       "qrs_amp_rel_change_mean": 0.030372213205762943,
       "qrs_amp_rel_change_std": 0.07427745692854411,
       "qrs_width_rel_change_mean": -0.3215205925640177,
-      "qrs_width_rel_change_std": 0.47997650946832837
+      "qrs_width_rel_change_std": 0.47997650946832837,
+      "input_ac_snr_db_mean": -12.83675042189823,
+      "input_ac_snr_db_std": 1.7275687544261065,
+      "output_ac_snr_db_mean": 4.166049845954637,
+      "output_ac_snr_db_std": 2.89791939407229,
+      "snr_improvement_ac_db_mean": 17.00280026785287,
+      "snr_improvement_ac_db_std": 2.6504486542922505
     },
     {
       "noise_category": "baseline_wander",
@@ -76,7 +82,13 @@
       "qrs_amp_rel_change_mean": 0.0278349484831162,
       "qrs_amp_rel_change_std": 0.07575631918785967,
       "qrs_width_rel_change_mean": 0.011042146375000263,
-      "qrs_width_rel_change_std": 0.018539977891454357
+      "qrs_width_rel_change_std": 0.018539977891454357,
+      "input_ac_snr_db_mean": -12.83675042189823,
+      "input_ac_snr_db_std": 1.7275687544261065,
+      "output_ac_snr_db_mean": 5.370150416013163,
+      "output_ac_snr_db_std": 1.8683752724891978,
+      "snr_improvement_ac_db_mean": 18.20690083791139,
+      "snr_improvement_ac_db_std": 2.2700484968331383
     },
     {
       "noise_category": "baseline_wander",
@@ -107,7 +119,13 @@
       "qrs_amp_rel_change_mean": -0.4658992092732513,
       "qrs_amp_rel_change_std": 0.11064468809549599,
       "qrs_width_rel_change_mean": -0.2107078222288895,
-      "qrs_width_rel_change_std": 0.6378220984533153
+      "qrs_width_rel_change_std": 0.6378220984533153,
+      "input_ac_snr_db_mean": -12.83675042189823,
+      "input_ac_snr_db_std": 1.7275687544261065,
+      "output_ac_snr_db_mean": 1.032979854493233,
+      "output_ac_snr_db_std": 2.2375061705701946,
+      "snr_improvement_ac_db_mean": 13.869730276391461,
+      "snr_improvement_ac_db_std": 2.4043094596775987
     },
     {
       "noise_category": "baseline_wander",
@@ -138,7 +156,13 @@
       "qrs_amp_rel_change_mean": 0.08133358839066059,
       "qrs_amp_rel_change_std": 0.08209769594107469,
       "qrs_width_rel_change_mean": -0.17890870323783578,
-      "qrs_width_rel_change_std": 0.36810058037588134
+      "qrs_width_rel_change_std": 0.36810058037588134,
+      "input_ac_snr_db_mean": -12.83675042189823,
+      "input_ac_snr_db_std": 1.7275687544261065,
+      "output_ac_snr_db_mean": 5.3456990234104795,
+      "output_ac_snr_db_std": 2.2491767342887807,
+      "snr_improvement_ac_db_mean": 18.182449445308713,
+      "snr_improvement_ac_db_std": 2.1959497945842976
     },
     {
       "noise_category": "baseline_wander",
@@ -169,7 +193,13 @@
       "qrs_amp_rel_change_mean": 0.10340625521679617,
       "qrs_amp_rel_change_std": 0.09556420441578434,
       "qrs_width_rel_change_mean": -0.34653167830445364,
-      "qrs_width_rel_change_std": 0.46261836596562345
+      "qrs_width_rel_change_std": 0.46261836596562345,
+      "input_ac_snr_db_mean": -12.83675042189823,
+      "input_ac_snr_db_std": 1.7275687544261065,
+      "output_ac_snr_db_mean": -12.835998232271868,
+      "output_ac_snr_db_std": 1.7275155180994024,
+      "snr_improvement_ac_db_mean": 0.0007521896263634531,
+      "snr_improvement_ac_db_std": 0.0009648425420001368
     },
     {
       "noise_category": "baseline_wander",
@@ -200,7 +230,13 @@
       "qrs_amp_rel_change_mean": 0.10454836008886803,
       "qrs_amp_rel_change_std": 0.09323750070647177,
       "qrs_width_rel_change_mean": -0.3458165846177608,
-      "qrs_width_rel_change_std": 0.4631068481245064
+      "qrs_width_rel_change_std": 0.4631068481245064,
+      "input_ac_snr_db_mean": -12.83675042189823,
+      "input_ac_snr_db_std": 1.7275687544261065,
+      "output_ac_snr_db_mean": -12.83675042189823,
+      "output_ac_snr_db_std": 1.7275687544261065,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "baseline_wander",
@@ -231,7 +267,13 @@
       "qrs_amp_rel_change_mean": -0.0016562719303874647,
       "qrs_amp_rel_change_std": 0.028632979141635605,
       "qrs_width_rel_change_mean": -0.15664860234384956,
-      "qrs_width_rel_change_std": 0.3777384796842703
+      "qrs_width_rel_change_std": 0.3777384796842703,
+      "input_ac_snr_db_mean": -6.773764661305957,
+      "input_ac_snr_db_std": 1.7401773904509354,
+      "output_ac_snr_db_mean": 7.1712513739062205,
+      "output_ac_snr_db_std": 2.752277065738269,
+      "snr_improvement_ac_db_mean": 13.945016035212177,
+      "snr_improvement_ac_db_std": 2.6870305191286343
     },
     {
       "noise_category": "baseline_wander",
@@ -262,7 +304,13 @@
       "qrs_amp_rel_change_mean": -0.008630238273257849,
       "qrs_amp_rel_change_std": 0.04214665210320186,
       "qrs_width_rel_change_mean": -0.15520887223854551,
-      "qrs_width_rel_change_std": 0.37825740267571384
+      "qrs_width_rel_change_std": 0.37825740267571384,
+      "input_ac_snr_db_mean": -6.773764661305957,
+      "input_ac_snr_db_std": 1.7401773904509354,
+      "output_ac_snr_db_mean": 6.333614466102999,
+      "output_ac_snr_db_std": 2.591606447857082,
+      "snr_improvement_ac_db_mean": 13.107379127408953,
+      "snr_improvement_ac_db_std": 2.788696222698593
     },
     {
       "noise_category": "baseline_wander",
@@ -293,7 +341,13 @@
       "qrs_amp_rel_change_mean": -0.3892592351728303,
       "qrs_amp_rel_change_std": 0.07808759209472667,
       "qrs_width_rel_change_mean": -0.3973396840601873,
-      "qrs_width_rel_change_std": 0.5005485114660249
+      "qrs_width_rel_change_std": 0.5005485114660249,
+      "input_ac_snr_db_mean": -6.773764661305957,
+      "input_ac_snr_db_std": 1.7401773904509354,
+      "output_ac_snr_db_mean": 4.189788772533567,
+      "output_ac_snr_db_std": 2.0429266243968702,
+      "snr_improvement_ac_db_mean": 10.963553433839524,
+      "snr_improvement_ac_db_std": 2.1220023574964957
     },
     {
       "noise_category": "baseline_wander",
@@ -324,7 +378,13 @@
       "qrs_amp_rel_change_mean": 0.026920141987461954,
       "qrs_amp_rel_change_std": 0.04636524628781094,
       "qrs_width_rel_change_mean": -0.33480773970065786,
-      "qrs_width_rel_change_std": 0.470748471000994
+      "qrs_width_rel_change_std": 0.470748471000994,
+      "input_ac_snr_db_mean": -6.773764661305957,
+      "input_ac_snr_db_std": 1.7401773904509354,
+      "output_ac_snr_db_mean": 7.396445933831044,
+      "output_ac_snr_db_std": 2.50283408204768,
+      "snr_improvement_ac_db_mean": 14.170210595136998,
+      "snr_improvement_ac_db_std": 2.1872153023240113
     },
     {
       "noise_category": "baseline_wander",
@@ -355,7 +415,13 @@
       "qrs_amp_rel_change_mean": 0.0440366176380799,
       "qrs_amp_rel_change_std": 0.04215591323489149,
       "qrs_width_rel_change_mean": -0.3416491644791458,
-      "qrs_width_rel_change_std": 0.46578648283565827
+      "qrs_width_rel_change_std": 0.46578648283565827,
+      "input_ac_snr_db_mean": -6.773764661305957,
+      "input_ac_snr_db_std": 1.7401773904509354,
+      "output_ac_snr_db_mean": -6.772788147710334,
+      "output_ac_snr_db_std": 1.7396994151389125,
+      "snr_improvement_ac_db_mean": 0.0009765135956224747,
+      "snr_improvement_ac_db_std": 0.001394857916439547
     },
     {
       "noise_category": "baseline_wander",
@@ -386,7 +452,13 @@
       "qrs_amp_rel_change_mean": 0.04491957156335953,
       "qrs_amp_rel_change_std": 0.04276775297669993,
       "qrs_width_rel_change_mean": -0.3360912571367389,
-      "qrs_width_rel_change_std": 0.4697871412281316
+      "qrs_width_rel_change_std": 0.4697871412281316,
+      "input_ac_snr_db_mean": -6.773764661305957,
+      "input_ac_snr_db_std": 1.7401773904509354,
+      "output_ac_snr_db_mean": -6.773764661305957,
+      "output_ac_snr_db_std": 1.7401773904509354,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "baseline_wander",
@@ -417,7 +489,13 @@
       "qrs_amp_rel_change_mean": -0.01223092451173888,
       "qrs_amp_rel_change_std": 0.018207381855553532,
       "qrs_width_rel_change_mean": 0.015820020830229643,
-      "qrs_width_rel_change_std": 0.017931088192390362
+      "qrs_width_rel_change_std": 0.017931088192390362,
+      "input_ac_snr_db_mean": -0.8839814253210976,
+      "input_ac_snr_db_std": 1.7159088678470549,
+      "output_ac_snr_db_mean": 9.338207437583392,
+      "output_ac_snr_db_std": 3.080855828592238,
+      "snr_improvement_ac_db_mean": 10.22218886290449,
+      "snr_improvement_ac_db_std": 3.397675235919291
     },
     {
       "noise_category": "baseline_wander",
@@ -448,7 +526,13 @@
       "qrs_amp_rel_change_mean": -0.014649584062781698,
       "qrs_amp_rel_change_std": 0.032053249669538104,
       "qrs_width_rel_change_mean": 0.01895228303825886,
-      "qrs_width_rel_change_std": 0.01763642681979008
+      "qrs_width_rel_change_std": 0.01763642681979008,
+      "input_ac_snr_db_mean": -0.8839814253210976,
+      "input_ac_snr_db_std": 1.7159088678470549,
+      "output_ac_snr_db_mean": 7.585875641210746,
+      "output_ac_snr_db_std": 3.156026209921451,
+      "snr_improvement_ac_db_mean": 8.469857066531844,
+      "snr_improvement_ac_db_std": 3.6194217718720494
     },
     {
       "noise_category": "baseline_wander",
@@ -479,7 +563,13 @@
       "qrs_amp_rel_change_mean": -0.3628240256680427,
       "qrs_amp_rel_change_std": 0.07140587535464535,
       "qrs_width_rel_change_mean": 0.03855174754272781,
-      "qrs_width_rel_change_std": 0.46705212039804145
+      "qrs_width_rel_change_std": 0.46705212039804145,
+      "input_ac_snr_db_mean": -0.8839814253210976,
+      "input_ac_snr_db_std": 1.7159088678470549,
+      "output_ac_snr_db_mean": 6.448951450958925,
+      "output_ac_snr_db_std": 1.4005990008944509,
+      "snr_improvement_ac_db_mean": 7.332932876280024,
+      "snr_improvement_ac_db_std": 1.2127150179589032
     },
     {
       "noise_category": "baseline_wander",
@@ -510,7 +600,13 @@
       "qrs_amp_rel_change_mean": 0.009786927368236538,
       "qrs_amp_rel_change_std": 0.01728709893538365,
       "qrs_width_rel_change_mean": -0.08623694332801417,
-      "qrs_width_rel_change_std": 0.1872000411892144
+      "qrs_width_rel_change_std": 0.1872000411892144,
+      "input_ac_snr_db_mean": -0.8839814253210976,
+      "input_ac_snr_db_std": 1.7159088678470549,
+      "output_ac_snr_db_mean": 9.623845061053482,
+      "output_ac_snr_db_std": 1.9614930795314367,
+      "snr_improvement_ac_db_mean": 10.50782648637458,
+      "snr_improvement_ac_db_std": 2.0068288067631577
     },
     {
       "noise_category": "baseline_wander",
@@ -541,7 +637,13 @@
       "qrs_amp_rel_change_mean": 0.01425603118428508,
       "qrs_amp_rel_change_std": 0.018637260368298204,
       "qrs_width_rel_change_mean": -0.09268517131342845,
-      "qrs_width_rel_change_std": 0.18432635686929572
+      "qrs_width_rel_change_std": 0.18432635686929572,
+      "input_ac_snr_db_mean": -0.8839814253210976,
+      "input_ac_snr_db_std": 1.7159088678470549,
+      "output_ac_snr_db_mean": -0.8829853252758177,
+      "output_ac_snr_db_std": 1.7158481231983858,
+      "snr_improvement_ac_db_mean": 0.000996100045280015,
+      "snr_improvement_ac_db_std": 0.0012042329687577573
     },
     {
       "noise_category": "baseline_wander",
@@ -572,7 +674,13 @@
       "qrs_amp_rel_change_mean": 0.015249128438408208,
       "qrs_amp_rel_change_std": 0.01806714196669832,
       "qrs_width_rel_change_mean": -0.09139449126014405,
-      "qrs_width_rel_change_std": 0.18474243072567953
+      "qrs_width_rel_change_std": 0.18474243072567953,
+      "input_ac_snr_db_mean": -0.8839814253210976,
+      "input_ac_snr_db_std": 1.7159088678470549,
+      "output_ac_snr_db_mean": -0.8839814253210976,
+      "output_ac_snr_db_std": 1.7159088678470549,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "baseline_wander",
@@ -603,7 +711,13 @@
       "qrs_amp_rel_change_mean": -0.019594867091403824,
       "qrs_amp_rel_change_std": 0.013689058288417514,
       "qrs_width_rel_change_mean": 0.01688077132565036,
-      "qrs_width_rel_change_std": 0.014568345269784226
+      "qrs_width_rel_change_std": 0.014568345269784226,
+      "input_ac_snr_db_mean": 5.116376709068342,
+      "input_ac_snr_db_std": 1.725078382136839,
+      "output_ac_snr_db_mean": 10.548103413349615,
+      "output_ac_snr_db_std": 3.8489902669224336,
+      "snr_improvement_ac_db_mean": 5.431726704281273,
+      "snr_improvement_ac_db_std": 4.464329782936084
     },
     {
       "noise_category": "baseline_wander",
@@ -634,7 +748,13 @@
       "qrs_amp_rel_change_mean": -0.015265724746160855,
       "qrs_amp_rel_change_std": 0.02355593319358838,
       "qrs_width_rel_change_mean": 0.018487219700452567,
-      "qrs_width_rel_change_std": 0.020385854504645758
+      "qrs_width_rel_change_std": 0.020385854504645758,
+      "input_ac_snr_db_mean": 5.116376709068342,
+      "input_ac_snr_db_std": 1.725078382136839,
+      "output_ac_snr_db_mean": 8.49476919652272,
+      "output_ac_snr_db_std": 3.3701258255483104,
+      "snr_improvement_ac_db_mean": 3.3783924874543785,
+      "snr_improvement_ac_db_std": 3.829346920582225
     },
     {
       "noise_category": "baseline_wander",
@@ -665,7 +785,13 @@
       "qrs_amp_rel_change_mean": -0.3577712941313805,
       "qrs_amp_rel_change_std": 0.07200308477816801,
       "qrs_width_rel_change_mean": 0.03196961283166358,
-      "qrs_width_rel_change_std": 0.46606816292769215
+      "qrs_width_rel_change_std": 0.46606816292769215,
+      "input_ac_snr_db_mean": 5.116376709068342,
+      "input_ac_snr_db_std": 1.725078382136839,
+      "output_ac_snr_db_mean": 7.331866635489246,
+      "output_ac_snr_db_std": 1.1667917983548364,
+      "snr_improvement_ac_db_mean": 2.2154899264209016,
+      "snr_improvement_ac_db_std": 1.4738313946079595
     },
     {
       "noise_category": "baseline_wander",
@@ -696,7 +822,13 @@
       "qrs_amp_rel_change_mean": 0.006890435358418571,
       "qrs_amp_rel_change_std": 0.009111920325853477,
       "qrs_width_rel_change_mean": 0.007084916797257381,
-      "qrs_width_rel_change_std": 0.01726390537251114
+      "qrs_width_rel_change_std": 0.01726390537251114,
+      "input_ac_snr_db_mean": 5.116376709068342,
+      "input_ac_snr_db_std": 1.725078382136839,
+      "output_ac_snr_db_mean": 10.999727054889643,
+      "output_ac_snr_db_std": 2.301436715190821,
+      "snr_improvement_ac_db_mean": 5.8833503458213015,
+      "snr_improvement_ac_db_std": 2.3874833434461427
     },
     {
       "noise_category": "baseline_wander",
@@ -727,7 +859,13 @@
       "qrs_amp_rel_change_mean": 0.003344541192904678,
       "qrs_amp_rel_change_std": 0.005563959632972734,
       "qrs_width_rel_change_mean": -0.004518419081177227,
-      "qrs_width_rel_change_std": 0.007453225479634543
+      "qrs_width_rel_change_std": 0.007453225479634543,
+      "input_ac_snr_db_mean": 5.116376709068342,
+      "input_ac_snr_db_std": 1.725078382136839,
+      "output_ac_snr_db_mean": 5.116451152315482,
+      "output_ac_snr_db_std": 1.7251712782338633,
+      "snr_improvement_ac_db_mean": 7.444324713883344e-05,
+      "snr_improvement_ac_db_std": 0.0008672619366148255
     },
     {
       "noise_category": "baseline_wander",
@@ -758,7 +896,13 @@
       "qrs_amp_rel_change_mean": 0.003253293494505055,
       "qrs_amp_rel_change_std": 0.005324563661516684,
       "qrs_width_rel_change_mean": -0.0031895777725482813,
-      "qrs_width_rel_change_std": 0.0071675822160203
+      "qrs_width_rel_change_std": 0.0071675822160203,
+      "input_ac_snr_db_mean": 5.116376709068342,
+      "input_ac_snr_db_std": 1.725078382136839,
+      "output_ac_snr_db_mean": 5.116376709068342,
+      "output_ac_snr_db_std": 1.725078382136839,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "baseline_wander",
@@ -789,7 +933,13 @@
       "qrs_amp_rel_change_mean": -0.019896565230917825,
       "qrs_amp_rel_change_std": 0.010403803863858177,
       "qrs_width_rel_change_mean": 0.014669988254790671,
-      "qrs_width_rel_change_std": 0.015672814108612553
+      "qrs_width_rel_change_std": 0.015672814108612553,
+      "input_ac_snr_db_mean": 11.12076405583828,
+      "input_ac_snr_db_std": 1.720956857593161,
+      "output_ac_snr_db_mean": 10.689142344359784,
+      "output_ac_snr_db_std": 3.9025376443594686,
+      "snr_improvement_ac_db_mean": -0.4316217114784968,
+      "snr_improvement_ac_db_std": 4.423649861501709
     },
     {
       "noise_category": "baseline_wander",
@@ -820,7 +970,13 @@
       "qrs_amp_rel_change_mean": -0.01240384870747132,
       "qrs_amp_rel_change_std": 0.02120754003163804,
       "qrs_width_rel_change_mean": 0.018099094380202057,
-      "qrs_width_rel_change_std": 0.016793715946523447
+      "qrs_width_rel_change_std": 0.016793715946523447,
+      "input_ac_snr_db_mean": 11.12076405583828,
+      "input_ac_snr_db_std": 1.720956857593161,
+      "output_ac_snr_db_mean": 8.878457558483664,
+      "output_ac_snr_db_std": 3.243862132508908,
+      "snr_improvement_ac_db_mean": -2.242306497354616,
+      "snr_improvement_ac_db_std": 3.8050290961369235
     },
     {
       "noise_category": "baseline_wander",
@@ -851,7 +1007,13 @@
       "qrs_amp_rel_change_mean": -0.3634224944891027,
       "qrs_amp_rel_change_std": 0.07457676461990258,
       "qrs_width_rel_change_mean": -0.07243228262358054,
-      "qrs_width_rel_change_std": 0.48105423925778495
+      "qrs_width_rel_change_std": 0.48105423925778495,
+      "input_ac_snr_db_mean": 11.12076405583828,
+      "input_ac_snr_db_std": 1.720956857593161,
+      "output_ac_snr_db_mean": 7.558763356154111,
+      "output_ac_snr_db_std": 1.2687970760794127,
+      "snr_improvement_ac_db_mean": -3.5620006996841695,
+      "snr_improvement_ac_db_std": 1.5958652965104911
     },
     {
       "noise_category": "baseline_wander",
@@ -882,7 +1044,13 @@
       "qrs_amp_rel_change_mean": 0.004469746079578707,
       "qrs_amp_rel_change_std": 0.008092867802693464,
       "qrs_width_rel_change_mean": 0.0012920876506979902,
-      "qrs_width_rel_change_std": 0.012956358050973763
+      "qrs_width_rel_change_std": 0.012956358050973763,
+      "input_ac_snr_db_mean": 11.12076405583828,
+      "input_ac_snr_db_std": 1.720956857593161,
+      "output_ac_snr_db_mean": 11.324390356879116,
+      "output_ac_snr_db_std": 2.2228801009672607,
+      "snr_improvement_ac_db_mean": 0.20362630104083418,
+      "snr_improvement_ac_db_std": 2.3567180026814523
     },
     {
       "noise_category": "baseline_wander",
@@ -913,7 +1081,13 @@
       "qrs_amp_rel_change_mean": 0.0003975215931207709,
       "qrs_amp_rel_change_std": 0.0026312579314927633,
       "qrs_width_rel_change_mean": -0.006174179742078869,
-      "qrs_width_rel_change_std": 0.008017249439169868
+      "qrs_width_rel_change_std": 0.008017249439169868,
+      "input_ac_snr_db_mean": 11.12076405583828,
+      "input_ac_snr_db_std": 1.720956857593161,
+      "output_ac_snr_db_mean": 11.118366081325245,
+      "output_ac_snr_db_std": 1.7209405604080785,
+      "snr_improvement_ac_db_mean": -0.002397974513034207,
+      "snr_improvement_ac_db_std": 0.000806183846452396
     },
     {
       "noise_category": "baseline_wander",
@@ -944,7 +1118,13 @@
       "qrs_amp_rel_change_mean": 0.00031914710323355147,
       "qrs_amp_rel_change_std": 0.0026224536937754137,
       "qrs_width_rel_change_mean": -0.0017871387847136634,
-      "qrs_width_rel_change_std": 0.0031193968869756114
+      "qrs_width_rel_change_std": 0.0031193968869756114,
+      "input_ac_snr_db_mean": 11.12076405583828,
+      "input_ac_snr_db_std": 1.720956857593161,
+      "output_ac_snr_db_mean": 11.12076405583828,
+      "output_ac_snr_db_std": 1.720956857593161,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "baseline_wander",
@@ -975,7 +1155,13 @@
       "qrs_amp_rel_change_mean": -0.020403421213398235,
       "qrs_amp_rel_change_std": 0.009629795005136969,
       "qrs_width_rel_change_mean": 0.017534701705797826,
-      "qrs_width_rel_change_std": 0.020291065678637584
+      "qrs_width_rel_change_std": 0.020291065678637584,
+      "input_ac_snr_db_mean": 17.219929581781507,
+      "input_ac_snr_db_std": 1.7900709576573945,
+      "output_ac_snr_db_mean": 10.782984261994363,
+      "output_ac_snr_db_std": 3.9822810531170645,
+      "snr_improvement_ac_db_mean": -6.436945319787142,
+      "snr_improvement_ac_db_std": 4.610532834504712
     },
     {
       "noise_category": "baseline_wander",
@@ -1006,7 +1192,13 @@
       "qrs_amp_rel_change_mean": -0.010949731840789912,
       "qrs_amp_rel_change_std": 0.020951231069323145,
       "qrs_width_rel_change_mean": 0.020432019376224204,
-      "qrs_width_rel_change_std": 0.02103074548365052
+      "qrs_width_rel_change_std": 0.02103074548365052,
+      "input_ac_snr_db_mean": 17.219929581781507,
+      "input_ac_snr_db_std": 1.7900709576573945,
+      "output_ac_snr_db_mean": 8.97611964321695,
+      "output_ac_snr_db_std": 3.4385671987502273,
+      "snr_improvement_ac_db_mean": -8.243809938564555,
+      "snr_improvement_ac_db_std": 3.965998067158646
     },
     {
       "noise_category": "baseline_wander",
@@ -1037,7 +1229,13 @@
       "qrs_amp_rel_change_mean": -0.3629961372730094,
       "qrs_amp_rel_change_std": 0.07406252814528533,
       "qrs_width_rel_change_mean": -0.07502705159804347,
-      "qrs_width_rel_change_std": 0.47877502944200345
+      "qrs_width_rel_change_std": 0.47877502944200345,
+      "input_ac_snr_db_mean": 17.219929581781507,
+      "input_ac_snr_db_std": 1.7900709576573945,
+      "output_ac_snr_db_mean": 7.576653192232216,
+      "output_ac_snr_db_std": 1.2587176167811656,
+      "snr_improvement_ac_db_mean": -9.643276389549289,
+      "snr_improvement_ac_db_std": 1.6661601097049894
     },
     {
       "noise_category": "baseline_wander",
@@ -1068,7 +1266,13 @@
       "qrs_amp_rel_change_mean": 0.003709719808033924,
       "qrs_amp_rel_change_std": 0.00596434835338347,
       "qrs_width_rel_change_mean": 0.00690382145173582,
-      "qrs_width_rel_change_std": 0.017015564009986724
+      "qrs_width_rel_change_std": 0.017015564009986724,
+      "input_ac_snr_db_mean": 17.219929581781507,
+      "input_ac_snr_db_std": 1.7900709576573945,
+      "output_ac_snr_db_mean": 11.473217049366516,
+      "output_ac_snr_db_std": 2.3646314261501344,
+      "snr_improvement_ac_db_mean": -5.7467125324149935,
+      "snr_improvement_ac_db_std": 2.6106130194116357
     },
     {
       "noise_category": "baseline_wander",
@@ -1099,7 +1303,13 @@
       "qrs_amp_rel_change_mean": -0.00033529555681263213,
       "qrs_amp_rel_change_std": 0.0019480076274714841,
       "qrs_width_rel_change_mean": -0.0031763654490794564,
-      "qrs_width_rel_change_std": 0.0029242760045690287
+      "qrs_width_rel_change_std": 0.0029242760045690287,
+      "input_ac_snr_db_mean": 17.219929581781507,
+      "input_ac_snr_db_std": 1.7900709576573945,
+      "output_ac_snr_db_mean": 17.209137214064548,
+      "output_ac_snr_db_std": 1.7889663597655572,
+      "snr_improvement_ac_db_mean": -0.010792367716960705,
+      "snr_improvement_ac_db_std": 0.0034528960179297822
     },
     {
       "noise_category": "baseline_wander",
@@ -1130,7 +1340,13 @@
       "qrs_amp_rel_change_mean": -0.0002126411754182385,
       "qrs_amp_rel_change_std": 0.002400485934766864,
       "qrs_width_rel_change_mean": -0.0018487307473124964,
-      "qrs_width_rel_change_std": 0.002886244370255064
+      "qrs_width_rel_change_std": 0.002886244370255064,
+      "input_ac_snr_db_mean": 17.219929581781507,
+      "input_ac_snr_db_std": 1.7900709576573945,
+      "output_ac_snr_db_mean": 17.219929581781507,
+      "output_ac_snr_db_std": 1.7900709576573945,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "electrode_motion",
@@ -1161,7 +1377,13 @@
       "qrs_amp_rel_change_mean": 0.4817926068252635,
       "qrs_amp_rel_change_std": 0.25268998337737986,
       "qrs_width_rel_change_mean": -0.6788414171233867,
-      "qrs_width_rel_change_std": 0.4541883915432833
+      "qrs_width_rel_change_std": 0.4541883915432833,
+      "input_ac_snr_db_mean": -12.985588506248865,
+      "input_ac_snr_db_std": 1.7006052400669058,
+      "output_ac_snr_db_mean": -10.900321186889878,
+      "output_ac_snr_db_std": 2.311671801355105,
+      "snr_improvement_ac_db_mean": 2.0852673193589872,
+      "snr_improvement_ac_db_std": 1.509618415820838
     },
     {
       "noise_category": "electrode_motion",
@@ -1192,7 +1414,13 @@
       "qrs_amp_rel_change_mean": 0.48279633765896934,
       "qrs_amp_rel_change_std": 0.27596435381771683,
       "qrs_width_rel_change_mean": -0.6789508410320542,
-      "qrs_width_rel_change_std": 0.4541007136054308
+      "qrs_width_rel_change_std": 0.4541007136054308,
+      "input_ac_snr_db_mean": -12.985588506248865,
+      "input_ac_snr_db_std": 1.7006052400669058,
+      "output_ac_snr_db_mean": -9.741541742649925,
+      "output_ac_snr_db_std": 2.5475562078115845,
+      "snr_improvement_ac_db_mean": 3.24404676359894,
+      "snr_improvement_ac_db_std": 1.8359752054084024
     },
     {
       "noise_category": "electrode_motion",
@@ -1223,7 +1451,13 @@
       "qrs_amp_rel_change_mean": -0.1515383396419679,
       "qrs_amp_rel_change_std": 0.18444853320120655,
       "qrs_width_rel_change_mean": -1.0,
-      "qrs_width_rel_change_std": 0.0
+      "qrs_width_rel_change_std": 0.0,
+      "input_ac_snr_db_mean": -12.985588506248865,
+      "input_ac_snr_db_std": 1.7006052400669058,
+      "output_ac_snr_db_mean": -9.087228190739967,
+      "output_ac_snr_db_std": 2.222529956467173,
+      "snr_improvement_ac_db_mean": 3.898360315508898,
+      "snr_improvement_ac_db_std": 1.3842851564332368
     },
     {
       "noise_category": "electrode_motion",
@@ -1254,7 +1488,13 @@
       "qrs_amp_rel_change_mean": 0.5290616545091318,
       "qrs_amp_rel_change_std": 0.26487030313151555,
       "qrs_width_rel_change_mean": -0.793128277067909,
-      "qrs_width_rel_change_std": 0.30990410426524784
+      "qrs_width_rel_change_std": 0.30990410426524784,
+      "input_ac_snr_db_mean": -12.985588506248865,
+      "input_ac_snr_db_std": 1.7006052400669058,
+      "output_ac_snr_db_mean": -9.75403074894298,
+      "output_ac_snr_db_std": 2.366941639399653,
+      "snr_improvement_ac_db_mean": 3.231557757305885,
+      "snr_improvement_ac_db_std": 1.5980198682686013
     },
     {
       "noise_category": "electrode_motion",
@@ -1285,7 +1525,13 @@
       "qrs_amp_rel_change_mean": 0.5154135278346764,
       "qrs_amp_rel_change_std": 0.26341636906508303,
       "qrs_width_rel_change_mean": -0.858054517452966,
-      "qrs_width_rel_change_std": 0.317399748074178
+      "qrs_width_rel_change_std": 0.317399748074178,
+      "input_ac_snr_db_mean": -12.985588506248865,
+      "input_ac_snr_db_std": 1.7006052400669058,
+      "output_ac_snr_db_mean": -12.984590308217468,
+      "output_ac_snr_db_std": 1.7007928773932244,
+      "snr_improvement_ac_db_mean": 0.0009981980313952476,
+      "snr_improvement_ac_db_std": 0.0005860683190698699
     },
     {
       "noise_category": "electrode_motion",
@@ -1316,7 +1562,13 @@
       "qrs_amp_rel_change_mean": 0.5182520261176818,
       "qrs_amp_rel_change_std": 0.26160057614955323,
       "qrs_width_rel_change_mean": -0.857432552178197,
-      "qrs_width_rel_change_std": 0.3187905047082058
+      "qrs_width_rel_change_std": 0.3187905047082058,
+      "input_ac_snr_db_mean": -12.985588506248865,
+      "input_ac_snr_db_std": 1.7006052400669058,
+      "output_ac_snr_db_mean": -12.985588506248865,
+      "output_ac_snr_db_std": 1.7006052400669058,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "electrode_motion",
@@ -1347,7 +1599,13 @@
       "qrs_amp_rel_change_mean": 0.17192391484232591,
       "qrs_amp_rel_change_std": 0.12840339264935807,
       "qrs_width_rel_change_mean": -0.169406491469876,
-      "qrs_width_rel_change_std": 0.3726840467280612
+      "qrs_width_rel_change_std": 0.3726840467280612,
+      "input_ac_snr_db_mean": -6.963984885436825,
+      "input_ac_snr_db_std": 1.7020946833580193,
+      "output_ac_snr_db_mean": -4.682001454134783,
+      "output_ac_snr_db_std": 2.51809417508221,
+      "snr_improvement_ac_db_mean": 2.2819834313020437,
+      "snr_improvement_ac_db_std": 2.460189866799424
     },
     {
       "noise_category": "electrode_motion",
@@ -1378,7 +1636,13 @@
       "qrs_amp_rel_change_mean": 0.19566934635026706,
       "qrs_amp_rel_change_std": 0.14533214058794686,
       "qrs_width_rel_change_mean": -0.17085348448251747,
-      "qrs_width_rel_change_std": 0.3719724809887789
+      "qrs_width_rel_change_std": 0.3719724809887789,
+      "input_ac_snr_db_mean": -6.963984885436825,
+      "input_ac_snr_db_std": 1.7020946833580193,
+      "output_ac_snr_db_mean": -4.057372374651157,
+      "output_ac_snr_db_std": 2.085667801260042,
+      "snr_improvement_ac_db_mean": 2.9066125107856675,
+      "snr_improvement_ac_db_std": 2.042668731758199
     },
     {
       "noise_category": "electrode_motion",
@@ -1409,7 +1673,13 @@
       "qrs_amp_rel_change_mean": -0.38016441097899484,
       "qrs_amp_rel_change_std": 0.10271003430501971,
       "qrs_width_rel_change_mean": -1.0,
-      "qrs_width_rel_change_std": 0.0
+      "qrs_width_rel_change_std": 0.0,
+      "input_ac_snr_db_mean": -6.963984885436825,
+      "input_ac_snr_db_std": 1.7020946833580193,
+      "output_ac_snr_db_mean": -3.8586374665719676,
+      "output_ac_snr_db_std": 2.035616388783375,
+      "snr_improvement_ac_db_mean": 3.1053474188648575,
+      "snr_improvement_ac_db_std": 1.6708290170829017
     },
     {
       "noise_category": "electrode_motion",
@@ -1440,7 +1710,13 @@
       "qrs_amp_rel_change_mean": 0.21348421858152672,
       "qrs_amp_rel_change_std": 0.1373595099142087,
       "qrs_width_rel_change_mean": -0.18441939866104592,
-      "qrs_width_rel_change_std": 0.36566233301571105
+      "qrs_width_rel_change_std": 0.36566233301571105,
+      "input_ac_snr_db_mean": -6.963984885436825,
+      "input_ac_snr_db_std": 1.7020946833580193,
+      "output_ac_snr_db_mean": -4.045242379787689,
+      "output_ac_snr_db_std": 2.0893032140396985,
+      "snr_improvement_ac_db_mean": 2.918742505649136,
+      "snr_improvement_ac_db_std": 1.8889069887111174
     },
     {
       "noise_category": "electrode_motion",
@@ -1471,7 +1747,13 @@
       "qrs_amp_rel_change_mean": 0.17982181864155006,
       "qrs_amp_rel_change_std": 0.11202744534244631,
       "qrs_width_rel_change_mean": -0.1848913499485879,
-      "qrs_width_rel_change_std": 0.3654359858986325
+      "qrs_width_rel_change_std": 0.3654359858986325,
+      "input_ac_snr_db_mean": -6.963984885436825,
+      "input_ac_snr_db_std": 1.7020946833580193,
+      "output_ac_snr_db_mean": -6.963418886012877,
+      "output_ac_snr_db_std": 1.702138352570772,
+      "snr_improvement_ac_db_mean": 0.0005659994239496146,
+      "snr_improvement_ac_db_std": 0.00039316190562592717
     },
     {
       "noise_category": "electrode_motion",
@@ -1502,7 +1784,13 @@
       "qrs_amp_rel_change_mean": 0.18155773255665103,
       "qrs_amp_rel_change_std": 0.1131250129526964,
       "qrs_width_rel_change_mean": -0.1836781840122087,
-      "qrs_width_rel_change_std": 0.3659788287757461
+      "qrs_width_rel_change_std": 0.3659788287757461,
+      "input_ac_snr_db_mean": -6.963984885436825,
+      "input_ac_snr_db_std": 1.7020946833580193,
+      "output_ac_snr_db_mean": -6.963984885436825,
+      "output_ac_snr_db_std": 1.7020946833580193,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "electrode_motion",
@@ -1533,7 +1821,13 @@
       "qrs_amp_rel_change_mean": 0.04326075303479018,
       "qrs_amp_rel_change_std": 0.07176579259476283,
       "qrs_width_rel_change_mean": 0.031216930597427032,
-      "qrs_width_rel_change_std": 0.033306536645763885
+      "qrs_width_rel_change_std": 0.033306536645763885,
+      "input_ac_snr_db_mean": -0.9229852598655912,
+      "input_ac_snr_db_std": 1.705918574940494,
+      "output_ac_snr_db_mean": 0.47706669985069616,
+      "output_ac_snr_db_std": 1.727058409160361,
+      "snr_improvement_ac_db_mean": 1.4000519597162875,
+      "snr_improvement_ac_db_std": 1.2216293043242301
     },
     {
       "noise_category": "electrode_motion",
@@ -1564,7 +1858,13 @@
       "qrs_amp_rel_change_mean": 0.052580057374852274,
       "qrs_amp_rel_change_std": 0.08243481004467064,
       "qrs_width_rel_change_mean": 0.03429318132714024,
-      "qrs_width_rel_change_std": 0.03441145243698263
+      "qrs_width_rel_change_std": 0.03441145243698263,
+      "input_ac_snr_db_mean": -0.9229852598655912,
+      "input_ac_snr_db_std": 1.705918574940494,
+      "output_ac_snr_db_mean": 0.888506426701506,
+      "output_ac_snr_db_std": 1.7384350900993253,
+      "snr_improvement_ac_db_mean": 1.8114916865670971,
+      "snr_improvement_ac_db_std": 0.9714211574619634
     },
     {
       "noise_category": "electrode_motion",
@@ -1595,7 +1895,13 @@
       "qrs_amp_rel_change_mean": -0.41373086776553086,
       "qrs_amp_rel_change_std": 0.08010167580120094,
       "qrs_width_rel_change_mean": -0.8074641786526283,
-      "qrs_width_rel_change_std": 0.43052318463647804
+      "qrs_width_rel_change_std": 0.43052318463647804,
+      "input_ac_snr_db_mean": -0.9229852598655912,
+      "input_ac_snr_db_std": 1.705918574940494,
+      "output_ac_snr_db_mean": 1.3435672848899476,
+      "output_ac_snr_db_std": 1.8155179001397133,
+      "snr_improvement_ac_db_mean": 2.2665525447555384,
+      "snr_improvement_ac_db_std": 1.3523192856840205
     },
     {
       "noise_category": "electrode_motion",
@@ -1626,7 +1932,13 @@
       "qrs_amp_rel_change_mean": 0.06953028990358041,
       "qrs_amp_rel_change_std": 0.0638635909381723,
       "qrs_width_rel_change_mean": 0.01409549418805077,
-      "qrs_width_rel_change_std": 0.0233062174620708
+      "qrs_width_rel_change_std": 0.0233062174620708,
+      "input_ac_snr_db_mean": -0.9229852598655912,
+      "input_ac_snr_db_std": 1.705918574940494,
+      "output_ac_snr_db_mean": 1.4508913640280707,
+      "output_ac_snr_db_std": 2.0411298574100862,
+      "snr_improvement_ac_db_mean": 2.373876623893662,
+      "snr_improvement_ac_db_std": 1.3935984237694719
     },
     {
       "noise_category": "electrode_motion",
@@ -1657,7 +1969,13 @@
       "qrs_amp_rel_change_mean": 0.05930906395069725,
       "qrs_amp_rel_change_std": 0.057326296947170306,
       "qrs_width_rel_change_mean": 0.006777458000064091,
-      "qrs_width_rel_change_std": 0.025161095748838614
+      "qrs_width_rel_change_std": 0.025161095748838614,
+      "input_ac_snr_db_mean": -0.9229852598655912,
+      "input_ac_snr_db_std": 1.705918574940494,
+      "output_ac_snr_db_mean": -0.9224191017111434,
+      "output_ac_snr_db_std": 1.7058630137372772,
+      "snr_improvement_ac_db_mean": 0.000566158154447774,
+      "snr_improvement_ac_db_std": 0.0003903175756851168
     },
     {
       "noise_category": "electrode_motion",
@@ -1688,7 +2006,13 @@
       "qrs_amp_rel_change_mean": 0.05833756333910638,
       "qrs_amp_rel_change_std": 0.05633142162924512,
       "qrs_width_rel_change_mean": 0.00815315303677626,
-      "qrs_width_rel_change_std": 0.02529399293536899
+      "qrs_width_rel_change_std": 0.02529399293536899,
+      "input_ac_snr_db_mean": -0.9229852598655912,
+      "input_ac_snr_db_std": 1.705918574940494,
+      "output_ac_snr_db_mean": -0.9229852598655912,
+      "output_ac_snr_db_std": 1.705918574940494,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "electrode_motion",
@@ -1719,7 +2043,13 @@
       "qrs_amp_rel_change_mean": 0.00840313682779677,
       "qrs_amp_rel_change_std": 0.044080181708032906,
       "qrs_width_rel_change_mean": 0.014116588018593492,
-      "qrs_width_rel_change_std": 0.024506377085231172
+      "qrs_width_rel_change_std": 0.024506377085231172,
+      "input_ac_snr_db_mean": 5.027586098222739,
+      "input_ac_snr_db_std": 1.7074143522485543,
+      "output_ac_snr_db_mean": 5.61265282961481,
+      "output_ac_snr_db_std": 2.833509813566474,
+      "snr_improvement_ac_db_mean": 0.5850667313920713,
+      "snr_improvement_ac_db_std": 3.3152254490880355
     },
     {
       "noise_category": "electrode_motion",
@@ -1750,7 +2080,13 @@
       "qrs_amp_rel_change_mean": 0.017927956197055426,
       "qrs_amp_rel_change_std": 0.057257057960857914,
       "qrs_width_rel_change_mean": 0.00951292743401265,
-      "qrs_width_rel_change_std": 0.02726851398997752
+      "qrs_width_rel_change_std": 0.02726851398997752,
+      "input_ac_snr_db_mean": 5.027586098222739,
+      "input_ac_snr_db_std": 1.7074143522485543,
+      "output_ac_snr_db_mean": 5.245185075233161,
+      "output_ac_snr_db_std": 2.0590595919162573,
+      "snr_improvement_ac_db_mean": 0.21759897701042136,
+      "snr_improvement_ac_db_std": 2.525954673134243
     },
     {
       "noise_category": "electrode_motion",
@@ -1781,7 +2117,13 @@
       "qrs_amp_rel_change_mean": -0.38006838390691045,
       "qrs_amp_rel_change_std": 0.07898819497419385,
       "qrs_width_rel_change_mean": -0.1422898357441847,
-      "qrs_width_rel_change_std": 0.6095364300971653
+      "qrs_width_rel_change_std": 0.6095364300971653,
+      "input_ac_snr_db_mean": 5.027586098222739,
+      "input_ac_snr_db_std": 1.7074143522485543,
+      "output_ac_snr_db_mean": 5.15020594507778,
+      "output_ac_snr_db_std": 1.511132080476437,
+      "snr_improvement_ac_db_mean": 0.12261984685504124,
+      "snr_improvement_ac_db_std": 1.8904498396507714
     },
     {
       "noise_category": "electrode_motion",
@@ -1812,7 +2154,13 @@
       "qrs_amp_rel_change_mean": 0.03246973170305773,
       "qrs_amp_rel_change_std": 0.04095151650596395,
       "qrs_width_rel_change_mean": -0.02070071216339642,
-      "qrs_width_rel_change_std": 0.027787014915438304
+      "qrs_width_rel_change_std": 0.027787014915438304,
+      "input_ac_snr_db_mean": 5.027586098222739,
+      "input_ac_snr_db_std": 1.7074143522485543,
+      "output_ac_snr_db_mean": 6.291806894716485,
+      "output_ac_snr_db_std": 2.0757738301494224,
+      "snr_improvement_ac_db_mean": 1.264220796493746,
+      "snr_improvement_ac_db_std": 2.389282026309412
     },
     {
       "noise_category": "electrode_motion",
@@ -1843,7 +2191,13 @@
       "qrs_amp_rel_change_mean": 0.020446019703324356,
       "qrs_amp_rel_change_std": 0.03330641374863093,
       "qrs_width_rel_change_mean": -0.019793891040837498,
-      "qrs_width_rel_change_std": 0.029063149627005545
+      "qrs_width_rel_change_std": 0.029063149627005545,
+      "input_ac_snr_db_mean": 5.027586098222739,
+      "input_ac_snr_db_std": 1.7074143522485543,
+      "output_ac_snr_db_mean": 5.027365629201133,
+      "output_ac_snr_db_std": 1.7073873250426832,
+      "snr_improvement_ac_db_mean": -0.00022046902160632875,
+      "snr_improvement_ac_db_std": 0.00024799486393877027
     },
     {
       "noise_category": "electrode_motion",
@@ -1874,7 +2228,13 @@
       "qrs_amp_rel_change_mean": 0.02018385734599672,
       "qrs_amp_rel_change_std": 0.03176700185001161,
       "qrs_width_rel_change_mean": -0.018403548693475807,
-      "qrs_width_rel_change_std": 0.02903132915064916
+      "qrs_width_rel_change_std": 0.02903132915064916,
+      "input_ac_snr_db_mean": 5.027586098222739,
+      "input_ac_snr_db_std": 1.7074143522485543,
+      "output_ac_snr_db_mean": 5.027586098222739,
+      "output_ac_snr_db_std": 1.7074143522485543,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "electrode_motion",
@@ -1905,7 +2265,13 @@
       "qrs_amp_rel_change_mean": -0.005864342642430408,
       "qrs_amp_rel_change_std": 0.0366888401192691,
       "qrs_width_rel_change_mean": -0.15335331149636,
-      "qrs_width_rel_change_std": 0.37880054560635895
+      "qrs_width_rel_change_std": 0.37880054560635895,
+      "input_ac_snr_db_mean": 11.101195808663359,
+      "input_ac_snr_db_std": 1.669904293540093,
+      "output_ac_snr_db_mean": 9.04097992458532,
+      "output_ac_snr_db_std": 3.324722005392748,
+      "snr_improvement_ac_db_mean": -2.0602158840780387,
+      "snr_improvement_ac_db_std": 3.479098045776092
     },
     {
       "noise_category": "electrode_motion",
@@ -1936,7 +2302,13 @@
       "qrs_amp_rel_change_mean": 0.0001908822099448558,
       "qrs_amp_rel_change_std": 0.04126949151245924,
       "qrs_width_rel_change_mean": 0.014326887239878008,
-      "qrs_width_rel_change_std": 0.011185088567601665
+      "qrs_width_rel_change_std": 0.011185088567601665,
+      "input_ac_snr_db_mean": 11.101195808663359,
+      "input_ac_snr_db_std": 1.669904293540093,
+      "output_ac_snr_db_mean": 7.976871348260571,
+      "output_ac_snr_db_std": 2.9652023195599386,
+      "snr_improvement_ac_db_mean": -3.12432446040279,
+      "snr_improvement_ac_db_std": 3.2317797704377136
     },
     {
       "noise_category": "electrode_motion",
@@ -1967,7 +2339,13 @@
       "qrs_amp_rel_change_mean": -0.3555742251233508,
       "qrs_amp_rel_change_std": 0.06996067458293649,
       "qrs_width_rel_change_mean": -0.20206803800082937,
-      "qrs_width_rel_change_std": 0.5644297171605367
+      "qrs_width_rel_change_std": 0.5644297171605367,
+      "input_ac_snr_db_mean": 11.101195808663359,
+      "input_ac_snr_db_std": 1.669904293540093,
+      "output_ac_snr_db_mean": 7.180735654664055,
+      "output_ac_snr_db_std": 1.2455564538969106,
+      "snr_improvement_ac_db_mean": -3.9204601539993043,
+      "snr_improvement_ac_db_std": 1.4775553044911107
     },
     {
       "noise_category": "electrode_motion",
@@ -1998,7 +2376,13 @@
       "qrs_amp_rel_change_mean": 0.01353472549929415,
       "qrs_amp_rel_change_std": 0.028975053446011347,
       "qrs_width_rel_change_mean": -0.001165898964298663,
-      "qrs_width_rel_change_std": 0.002254616799053419
+      "qrs_width_rel_change_std": 0.002254616799053419,
+      "input_ac_snr_db_mean": 11.101195808663359,
+      "input_ac_snr_db_std": 1.669904293540093,
+      "output_ac_snr_db_mean": 9.864945107786346,
+      "output_ac_snr_db_std": 2.1833457311517512,
+      "snr_improvement_ac_db_mean": -1.2362507008770147,
+      "snr_improvement_ac_db_std": 2.1332129602944137
     },
     {
       "noise_category": "electrode_motion",
@@ -2029,7 +2413,13 @@
       "qrs_amp_rel_change_mean": 0.010064940643535048,
       "qrs_amp_rel_change_std": 0.024157831269166027,
       "qrs_width_rel_change_mean": -0.006691881310945165,
-      "qrs_width_rel_change_std": 0.007563112488190298
+      "qrs_width_rel_change_std": 0.007563112488190298,
+      "input_ac_snr_db_mean": 11.101195808663359,
+      "input_ac_snr_db_std": 1.669904293540093,
+      "output_ac_snr_db_mean": 11.099135657627443,
+      "output_ac_snr_db_std": 1.669862510188105,
+      "snr_improvement_ac_db_mean": -0.002060151035915503,
+      "snr_improvement_ac_db_std": 0.0007397101906630356
     },
     {
       "noise_category": "electrode_motion",
@@ -2060,7 +2450,13 @@
       "qrs_amp_rel_change_mean": 0.009834632537241025,
       "qrs_amp_rel_change_std": 0.023023768686799416,
       "qrs_width_rel_change_mean": -0.005347182632791669,
-      "qrs_width_rel_change_std": 0.00755456982130824
+      "qrs_width_rel_change_std": 0.00755456982130824,
+      "input_ac_snr_db_mean": 11.101195808663359,
+      "input_ac_snr_db_std": 1.669904293540093,
+      "output_ac_snr_db_mean": 11.101195808663359,
+      "output_ac_snr_db_std": 1.669904293540093,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "electrode_motion",
@@ -2091,7 +2487,13 @@
       "qrs_amp_rel_change_mean": -0.017000518809217623,
       "qrs_amp_rel_change_std": 0.014616649432003744,
       "qrs_width_rel_change_mean": 0.02060876653482869,
-      "qrs_width_rel_change_std": 0.020429336906073542
+      "qrs_width_rel_change_std": 0.020429336906073542,
+      "input_ac_snr_db_mean": 17.079970177349992,
+      "input_ac_snr_db_std": 1.713436117700241,
+      "output_ac_snr_db_mean": 9.86593265534233,
+      "output_ac_snr_db_std": 3.2368138348511635,
+      "snr_improvement_ac_db_mean": -7.214037522007665,
+      "snr_improvement_ac_db_std": 3.616386862763069
     },
     {
       "noise_category": "electrode_motion",
@@ -2122,7 +2524,13 @@
       "qrs_amp_rel_change_mean": -0.0076865541776500994,
       "qrs_amp_rel_change_std": 0.02426062311030146,
       "qrs_width_rel_change_mean": 0.02236415202647764,
-      "qrs_width_rel_change_std": 0.02218656148978195
+      "qrs_width_rel_change_std": 0.02218656148978195,
+      "input_ac_snr_db_mean": 17.079970177349992,
+      "input_ac_snr_db_std": 1.713436117700241,
+      "output_ac_snr_db_mean": 8.533281697985576,
+      "output_ac_snr_db_std": 2.996528100127253,
+      "snr_improvement_ac_db_mean": -8.546688479364416,
+      "snr_improvement_ac_db_std": 3.3495630500525415
     },
     {
       "noise_category": "electrode_motion",
@@ -2153,7 +2561,13 @@
       "qrs_amp_rel_change_mean": -0.3606063284658391,
       "qrs_amp_rel_change_std": 0.07252895534897562,
       "qrs_width_rel_change_mean": -0.0796825090237572,
-      "qrs_width_rel_change_std": 0.474040307224674
+      "qrs_width_rel_change_std": 0.474040307224674,
+      "input_ac_snr_db_mean": 17.079970177349992,
+      "input_ac_snr_db_std": 1.713436117700241,
+      "output_ac_snr_db_mean": 7.4437614746495555,
+      "output_ac_snr_db_std": 1.2298512765455407,
+      "snr_improvement_ac_db_mean": -9.636208702700438,
+      "snr_improvement_ac_db_std": 1.55999253748378
     },
     {
       "noise_category": "electrode_motion",
@@ -2184,7 +2598,13 @@
       "qrs_amp_rel_change_mean": 0.004686666366423943,
       "qrs_amp_rel_change_std": 0.007866614420251427,
       "qrs_width_rel_change_mean": 0.0025501323119003073,
-      "qrs_width_rel_change_std": 0.013539369290259784
+      "qrs_width_rel_change_std": 0.013539369290259784,
+      "input_ac_snr_db_mean": 17.079970177349992,
+      "input_ac_snr_db_std": 1.713436117700241,
+      "output_ac_snr_db_mean": 10.715851001517558,
+      "output_ac_snr_db_std": 2.092730781732175,
+      "snr_improvement_ac_db_mean": -6.364119175832436,
+      "snr_improvement_ac_db_std": 2.095110873732521
     },
     {
       "noise_category": "electrode_motion",
@@ -2215,7 +2635,13 @@
       "qrs_amp_rel_change_mean": 0.002435128809072271,
       "qrs_amp_rel_change_std": 0.008184618635958305,
       "qrs_width_rel_change_mean": -0.0047845064218091414,
-      "qrs_width_rel_change_std": 0.015501063732873653
+      "qrs_width_rel_change_std": 0.015501063732873653,
+      "input_ac_snr_db_mean": 17.079970177349992,
+      "input_ac_snr_db_std": 1.713436117700241,
+      "output_ac_snr_db_mean": 17.069657111892433,
+      "output_ac_snr_db_std": 1.7128314396932336,
+      "snr_improvement_ac_db_mean": -0.010313065457564895,
+      "snr_improvement_ac_db_std": 0.0032204818918193344
     },
     {
       "noise_category": "electrode_motion",
@@ -2246,7 +2672,13 @@
       "qrs_amp_rel_change_mean": 0.0025260752211204744,
       "qrs_amp_rel_change_std": 0.007356284398381322,
       "qrs_width_rel_change_mean": -0.003507508752937332,
-      "qrs_width_rel_change_std": 0.015382193037079942
+      "qrs_width_rel_change_std": 0.015382193037079942,
+      "input_ac_snr_db_mean": 17.079970177349992,
+      "input_ac_snr_db_std": 1.713436117700241,
+      "output_ac_snr_db_mean": 17.079970177349992,
+      "output_ac_snr_db_std": 1.713436117700241,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "muscle_artifact",
@@ -2277,7 +2709,13 @@
       "qrs_amp_rel_change_mean": 0.34816610623887706,
       "qrs_amp_rel_change_std": 0.2939309012519894,
       "qrs_width_rel_change_mean": -0.518127386728907,
-      "qrs_width_rel_change_std": 0.4836660524856983
+      "qrs_width_rel_change_std": 0.4836660524856983,
+      "input_ac_snr_db_mean": -12.970736594777856,
+      "input_ac_snr_db_std": 1.6910800147544802,
+      "output_ac_snr_db_mean": -5.572281460274068,
+      "output_ac_snr_db_std": 2.3758588129047205,
+      "snr_improvement_ac_db_mean": 7.398455134503789,
+      "snr_improvement_ac_db_std": 1.9903432413573856
     },
     {
       "noise_category": "muscle_artifact",
@@ -2308,7 +2746,13 @@
       "qrs_amp_rel_change_mean": 0.33219784339658465,
       "qrs_amp_rel_change_std": 0.2953514291901005,
       "qrs_width_rel_change_mean": -0.5117732965790952,
-      "qrs_width_rel_change_std": 0.490607451209424
+      "qrs_width_rel_change_std": 0.490607451209424,
+      "input_ac_snr_db_mean": -12.970736594777856,
+      "input_ac_snr_db_std": 1.6910800147544802,
+      "output_ac_snr_db_mean": -4.315929132381074,
+      "output_ac_snr_db_std": 2.4032751109533397,
+      "snr_improvement_ac_db_mean": 8.654807462396784,
+      "snr_improvement_ac_db_std": 2.2554507126957817
     },
     {
       "noise_category": "muscle_artifact",
@@ -2339,7 +2783,13 @@
       "qrs_amp_rel_change_mean": -0.29671665486547577,
       "qrs_amp_rel_change_std": 0.24338362016083606,
       "qrs_width_rel_change_mean": -1.0,
-      "qrs_width_rel_change_std": 0.0
+      "qrs_width_rel_change_std": 0.0,
+      "input_ac_snr_db_mean": -12.970736594777856,
+      "input_ac_snr_db_std": 1.6910800147544802,
+      "output_ac_snr_db_mean": -4.6674137257773385,
+      "output_ac_snr_db_std": 2.7466599156495417,
+      "snr_improvement_ac_db_mean": 8.30332286900052,
+      "snr_improvement_ac_db_std": 1.8795208942833885
     },
     {
       "noise_category": "muscle_artifact",
@@ -2370,7 +2820,13 @@
       "qrs_amp_rel_change_mean": 0.46857378546599404,
       "qrs_amp_rel_change_std": 0.34791091588180734,
       "qrs_width_rel_change_mean": -0.690451506420379,
-      "qrs_width_rel_change_std": 0.4378969966714928
+      "qrs_width_rel_change_std": 0.4378969966714928,
+      "input_ac_snr_db_mean": -12.970736594777856,
+      "input_ac_snr_db_std": 1.6910800147544802,
+      "output_ac_snr_db_mean": -5.442657018295138,
+      "output_ac_snr_db_std": 2.383748695456701,
+      "snr_improvement_ac_db_mean": 7.528079576482719,
+      "snr_improvement_ac_db_std": 2.28712708415441
     },
     {
       "noise_category": "muscle_artifact",
@@ -2401,7 +2857,13 @@
       "qrs_amp_rel_change_mean": 0.47944181966912625,
       "qrs_amp_rel_change_std": 0.33608967650340804,
       "qrs_width_rel_change_mean": -0.6904279914299779,
-      "qrs_width_rel_change_std": 0.4379243339609327
+      "qrs_width_rel_change_std": 0.4379243339609327,
+      "input_ac_snr_db_mean": -12.970736594777856,
+      "input_ac_snr_db_std": 1.6910800147544802,
+      "output_ac_snr_db_mean": -12.95533380904059,
+      "output_ac_snr_db_std": 1.6933758448646097,
+      "snr_improvement_ac_db_mean": 0.015402785737266455,
+      "snr_improvement_ac_db_std": 0.009006773574086534
     },
     {
       "noise_category": "muscle_artifact",
@@ -2432,7 +2894,13 @@
       "qrs_amp_rel_change_mean": 0.4885244246779711,
       "qrs_amp_rel_change_std": 0.3311233396847809,
       "qrs_width_rel_change_mean": -0.6902802100202474,
-      "qrs_width_rel_change_std": 0.43813497242100763
+      "qrs_width_rel_change_std": 0.43813497242100763,
+      "input_ac_snr_db_mean": -12.970736594777856,
+      "input_ac_snr_db_std": 1.6910800147544802,
+      "output_ac_snr_db_mean": -12.970736594777856,
+      "output_ac_snr_db_std": 1.6910800147544802,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "muscle_artifact",
@@ -2463,7 +2931,13 @@
       "qrs_amp_rel_change_mean": 0.1737186053407554,
       "qrs_amp_rel_change_std": 0.16034450701205333,
       "qrs_width_rel_change_mean": -0.8483442096253145,
-      "qrs_width_rel_change_std": 0.339112656459255
+      "qrs_width_rel_change_std": 0.339112656459255,
+      "input_ac_snr_db_mean": -6.812234196274575,
+      "input_ac_snr_db_std": 1.7001166103839824,
+      "output_ac_snr_db_mean": -0.3314155528148081,
+      "output_ac_snr_db_std": 2.3021695922623433,
+      "snr_improvement_ac_db_mean": 6.480818643459766,
+      "snr_improvement_ac_db_std": 1.748618557984129
     },
     {
       "noise_category": "muscle_artifact",
@@ -2494,7 +2968,13 @@
       "qrs_amp_rel_change_mean": 0.1352790840652322,
       "qrs_amp_rel_change_std": 0.12664429806781397,
       "qrs_width_rel_change_mean": -0.8485147303916909,
-      "qrs_width_rel_change_std": 0.3387313604340623
+      "qrs_width_rel_change_std": 0.3387313604340623,
+      "input_ac_snr_db_mean": -6.812234196274575,
+      "input_ac_snr_db_std": 1.7001166103839824,
+      "output_ac_snr_db_mean": 1.2605083905557353,
+      "output_ac_snr_db_std": 2.2366528884823675,
+      "snr_improvement_ac_db_mean": 8.07274258683031,
+      "snr_improvement_ac_db_std": 1.7340007709810574
     },
     {
       "noise_category": "muscle_artifact",
@@ -2525,7 +3005,13 @@
       "qrs_amp_rel_change_mean": -0.459785678855393,
       "qrs_amp_rel_change_std": 0.138091856498888,
       "qrs_width_rel_change_mean": -0.7653580383332717,
-      "qrs_width_rel_change_std": 0.3598536205194251
+      "qrs_width_rel_change_std": 0.3598536205194251,
+      "input_ac_snr_db_mean": -6.812234196274575,
+      "input_ac_snr_db_std": 1.7001166103839824,
+      "output_ac_snr_db_mean": -0.01664497019104507,
+      "output_ac_snr_db_std": 2.310236643006569,
+      "snr_improvement_ac_db_mean": 6.79558922608353,
+      "snr_improvement_ac_db_std": 2.130298435381508
     },
     {
       "noise_category": "muscle_artifact",
@@ -2556,7 +3042,13 @@
       "qrs_amp_rel_change_mean": 0.18912421434844826,
       "qrs_amp_rel_change_std": 0.12893304786528179,
       "qrs_width_rel_change_mean": -1.0,
-      "qrs_width_rel_change_std": 0.0
+      "qrs_width_rel_change_std": 0.0,
+      "input_ac_snr_db_mean": -6.812234196274575,
+      "input_ac_snr_db_std": 1.7001166103839824,
+      "output_ac_snr_db_mean": 0.4243166328769396,
+      "output_ac_snr_db_std": 2.276204074045839,
+      "snr_improvement_ac_db_mean": 7.236550829151516,
+      "snr_improvement_ac_db_std": 1.613327661135346
     },
     {
       "noise_category": "muscle_artifact",
@@ -2587,7 +3079,13 @@
       "qrs_amp_rel_change_mean": 0.2385118736823164,
       "qrs_amp_rel_change_std": 0.1841970579600786,
       "qrs_width_rel_change_mean": -0.8412354399718942,
-      "qrs_width_rel_change_std": 0.3550083486406905
+      "qrs_width_rel_change_std": 0.3550083486406905,
+      "input_ac_snr_db_mean": -6.812234196274575,
+      "input_ac_snr_db_std": 1.7001166103839824,
+      "output_ac_snr_db_mean": -6.797658442277753,
+      "output_ac_snr_db_std": 1.6988487453196666,
+      "snr_improvement_ac_db_mean": 0.014575753996821761,
+      "snr_improvement_ac_db_std": 0.006155824975734813
     },
     {
       "noise_category": "muscle_artifact",
@@ -2618,7 +3116,13 @@
       "qrs_amp_rel_change_mean": 0.24329685109823704,
       "qrs_amp_rel_change_std": 0.18340253333463727,
       "qrs_width_rel_change_mean": -0.8410265039353111,
-      "qrs_width_rel_change_std": 0.35547554382143975
+      "qrs_width_rel_change_std": 0.35547554382143975,
+      "input_ac_snr_db_mean": -6.812234196274575,
+      "input_ac_snr_db_std": 1.7001166103839824,
+      "output_ac_snr_db_mean": -6.812234196274575,
+      "output_ac_snr_db_std": 1.7001166103839824,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "muscle_artifact",
@@ -2649,7 +3153,13 @@
       "qrs_amp_rel_change_mean": 0.05170944021448197,
       "qrs_amp_rel_change_std": 0.0808589323943552,
       "qrs_width_rel_change_mean": -0.3291882764310559,
-      "qrs_width_rel_change_std": 0.4750945806919694
+      "qrs_width_rel_change_std": 0.4750945806919694,
+      "input_ac_snr_db_mean": -0.9151424943370949,
+      "input_ac_snr_db_std": 1.6918297505448923,
+      "output_ac_snr_db_mean": 4.727968516870222,
+      "output_ac_snr_db_std": 2.9149410109400207,
+      "snr_improvement_ac_db_mean": 5.643111011207319,
+      "snr_improvement_ac_db_std": 2.57472885467484
     },
     {
       "noise_category": "muscle_artifact",
@@ -2680,7 +3190,13 @@
       "qrs_amp_rel_change_mean": 0.05090221051473852,
       "qrs_amp_rel_change_std": 0.08238423773835112,
       "qrs_width_rel_change_mean": -0.32885910515643063,
-      "qrs_width_rel_change_std": 0.47531743011252364
+      "qrs_width_rel_change_std": 0.47531743011252364,
+      "input_ac_snr_db_mean": -0.9151424943370949,
+      "input_ac_snr_db_std": 1.6918297505448923,
+      "output_ac_snr_db_mean": 4.532709640804646,
+      "output_ac_snr_db_std": 2.4916802227325987,
+      "snr_improvement_ac_db_mean": 5.447852135141741,
+      "snr_improvement_ac_db_std": 2.397539067595094
     },
     {
       "noise_category": "muscle_artifact",
@@ -2711,7 +3227,13 @@
       "qrs_amp_rel_change_mean": -0.3420206939864135,
       "qrs_amp_rel_change_std": 0.06238544931416931,
       "qrs_width_rel_change_mean": -0.637291485996479,
-      "qrs_width_rel_change_std": 0.5137188394938744
+      "qrs_width_rel_change_std": 0.5137188394938744,
+      "input_ac_snr_db_mean": -0.9151424943370949,
+      "input_ac_snr_db_std": 1.6918297505448923,
+      "output_ac_snr_db_mean": 4.9980507399521334,
+      "output_ac_snr_db_std": 2.4204565557939555,
+      "snr_improvement_ac_db_mean": 5.9131932342892295,
+      "snr_improvement_ac_db_std": 2.0506253910961596
     },
     {
       "noise_category": "muscle_artifact",
@@ -2742,7 +3264,13 @@
       "qrs_amp_rel_change_mean": 0.09536169639005836,
       "qrs_amp_rel_change_std": 0.10015683565188145,
       "qrs_width_rel_change_mean": -0.34834961964010963,
-      "qrs_width_rel_change_std": 0.4631038601472592
+      "qrs_width_rel_change_std": 0.4631038601472592,
+      "input_ac_snr_db_mean": -0.9151424943370949,
+      "input_ac_snr_db_std": 1.6918297505448923,
+      "output_ac_snr_db_mean": 4.606519886375763,
+      "output_ac_snr_db_std": 1.9738093204028164,
+      "snr_improvement_ac_db_mean": 5.521662380712858,
+      "snr_improvement_ac_db_std": 1.5347851412733708
     },
     {
       "noise_category": "muscle_artifact",
@@ -2773,7 +3301,13 @@
       "qrs_amp_rel_change_mean": 0.0841042400634874,
       "qrs_amp_rel_change_std": 0.09496486712791813,
       "qrs_width_rel_change_mean": -0.34876506608535035,
-      "qrs_width_rel_change_std": 0.46264993451721037
+      "qrs_width_rel_change_std": 0.46264993451721037,
+      "input_ac_snr_db_mean": -0.9151424943370949,
+      "input_ac_snr_db_std": 1.6918297505448923,
+      "output_ac_snr_db_mean": -0.8998388421999524,
+      "output_ac_snr_db_std": 1.692561566444243,
+      "snr_improvement_ac_db_mean": 0.015303652137142788,
+      "snr_improvement_ac_db_std": 0.009007319009466075
     },
     {
       "noise_category": "muscle_artifact",
@@ -2804,7 +3338,13 @@
       "qrs_amp_rel_change_mean": 0.08540098363634366,
       "qrs_amp_rel_change_std": 0.0957076640618751,
       "qrs_width_rel_change_mean": -0.3485491641609096,
-      "qrs_width_rel_change_std": 0.46293909965879676
+      "qrs_width_rel_change_std": 0.46293909965879676,
+      "input_ac_snr_db_mean": -0.9151424943370949,
+      "input_ac_snr_db_std": 1.6918297505448923,
+      "output_ac_snr_db_mean": -0.9151424943370949,
+      "output_ac_snr_db_std": 1.6918297505448923,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "muscle_artifact",
@@ -2835,7 +3375,13 @@
       "qrs_amp_rel_change_mean": 0.0038202671172549245,
       "qrs_amp_rel_change_std": 0.027609357086085095,
       "qrs_width_rel_change_mean": 0.006744931167245757,
-      "qrs_width_rel_change_std": 0.027360665162783487
+      "qrs_width_rel_change_std": 0.027360665162783487,
+      "input_ac_snr_db_mean": 5.533118034869377,
+      "input_ac_snr_db_std": 1.5970099359535948,
+      "output_ac_snr_db_mean": 8.176948551784902,
+      "output_ac_snr_db_std": 2.7584948825584816,
+      "snr_improvement_ac_db_mean": 2.643830516915524,
+      "snr_improvement_ac_db_std": 2.5361933091055833
     },
     {
       "noise_category": "muscle_artifact",
@@ -2866,7 +3412,13 @@
       "qrs_amp_rel_change_mean": 0.0037769826458139513,
       "qrs_amp_rel_change_std": 0.030035459275735577,
       "qrs_width_rel_change_mean": 0.006718475402891981,
-      "qrs_width_rel_change_std": 0.027358888766487816
+      "qrs_width_rel_change_std": 0.027358888766487816,
+      "input_ac_snr_db_mean": 5.533118034869377,
+      "input_ac_snr_db_std": 1.5970099359535948,
+      "output_ac_snr_db_mean": 7.172924289105602,
+      "output_ac_snr_db_std": 2.585681181174419,
+      "snr_improvement_ac_db_mean": 1.639806254236224,
+      "snr_improvement_ac_db_std": 2.6084024029497805
     },
     {
       "noise_category": "muscle_artifact",
@@ -2897,7 +3449,13 @@
       "qrs_amp_rel_change_mean": -0.35705281876617667,
       "qrs_amp_rel_change_std": 0.068908735116245,
       "qrs_width_rel_change_mean": -0.33846744144693813,
-      "qrs_width_rel_change_std": 0.5104576260016834
+      "qrs_width_rel_change_std": 0.5104576260016834,
+      "input_ac_snr_db_mean": 5.533118034869377,
+      "input_ac_snr_db_std": 1.5970099359535948,
+      "output_ac_snr_db_mean": 6.850102617861765,
+      "output_ac_snr_db_std": 1.20273387093028,
+      "snr_improvement_ac_db_mean": 1.316984582992387,
+      "snr_improvement_ac_db_std": 1.1506069731945483
     },
     {
       "noise_category": "muscle_artifact",
@@ -2928,7 +3486,13 @@
       "qrs_amp_rel_change_mean": 0.02676462601419733,
       "qrs_amp_rel_change_std": 0.022316691708155076,
       "qrs_width_rel_change_mean": -0.015099842466722704,
-      "qrs_width_rel_change_std": 0.02374328638429978
+      "qrs_width_rel_change_std": 0.02374328638429978,
+      "input_ac_snr_db_mean": 5.533118034869377,
+      "input_ac_snr_db_std": 1.5970099359535948,
+      "output_ac_snr_db_mean": 8.478317535889076,
+      "output_ac_snr_db_std": 1.9691333521034728,
+      "snr_improvement_ac_db_mean": 2.9451995010196983,
+      "snr_improvement_ac_db_std": 1.5608627499218712
     },
     {
       "noise_category": "muscle_artifact",
@@ -2959,7 +3523,13 @@
       "qrs_amp_rel_change_mean": 0.028818645922253344,
       "qrs_amp_rel_change_std": 0.027261266519491772,
       "qrs_width_rel_change_mean": -0.01705592039867896,
-      "qrs_width_rel_change_std": 0.022441914119087258
+      "qrs_width_rel_change_std": 0.022441914119087258,
+      "input_ac_snr_db_mean": 5.533118034869377,
+      "input_ac_snr_db_std": 1.5970099359535948,
+      "output_ac_snr_db_mean": 5.547018523509052,
+      "output_ac_snr_db_std": 1.5932768206509829,
+      "snr_improvement_ac_db_mean": 0.013900488639673548,
+      "snr_improvement_ac_db_std": 0.009570915550494991
     },
     {
       "noise_category": "muscle_artifact",
@@ -2990,7 +3560,13 @@
       "qrs_amp_rel_change_mean": 0.029819615237959347,
       "qrs_amp_rel_change_std": 0.027830740232856484,
       "qrs_width_rel_change_mean": -0.016353387826303134,
-      "qrs_width_rel_change_std": 0.022734289414133562
+      "qrs_width_rel_change_std": 0.022734289414133562,
+      "input_ac_snr_db_mean": 5.533118034869377,
+      "input_ac_snr_db_std": 1.5970099359535948,
+      "output_ac_snr_db_mean": 5.533118034869377,
+      "output_ac_snr_db_std": 1.5970099359535948,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "muscle_artifact",
@@ -3021,7 +3597,13 @@
       "qrs_amp_rel_change_mean": -0.013857733356015284,
       "qrs_amp_rel_change_std": 0.01666242522071658,
       "qrs_width_rel_change_mean": 0.019428932289440443,
-      "qrs_width_rel_change_std": 0.01914400375559011
+      "qrs_width_rel_change_std": 0.01914400375559011,
+      "input_ac_snr_db_mean": 11.14952030258328,
+      "input_ac_snr_db_std": 1.7404628186575437,
+      "output_ac_snr_db_mean": 9.831549840360964,
+      "output_ac_snr_db_std": 3.171048342637248,
+      "snr_improvement_ac_db_mean": -1.3179704622223165,
+      "snr_improvement_ac_db_std": 3.5321471871970433
     },
     {
       "noise_category": "muscle_artifact",
@@ -3052,7 +3634,13 @@
       "qrs_amp_rel_change_mean": -0.007816358820543235,
       "qrs_amp_rel_change_std": 0.02636314717505024,
       "qrs_width_rel_change_mean": 0.02180703419081007,
-      "qrs_width_rel_change_std": 0.022953356885652205
+      "qrs_width_rel_change_std": 0.022953356885652205,
+      "input_ac_snr_db_mean": 11.14952030258328,
+      "input_ac_snr_db_std": 1.7404628186575437,
+      "output_ac_snr_db_mean": 8.53954027918355,
+      "output_ac_snr_db_std": 3.0019945991403554,
+      "snr_improvement_ac_db_mean": -2.6099800233997326,
+      "snr_improvement_ac_db_std": 3.4062343751840536
     },
     {
       "noise_category": "muscle_artifact",
@@ -3083,7 +3671,13 @@
       "qrs_amp_rel_change_mean": -0.3615380625084402,
       "qrs_amp_rel_change_std": 0.07117691094165653,
       "qrs_width_rel_change_mean": -0.08453495919913841,
-      "qrs_width_rel_change_std": 0.47195871256087324
+      "qrs_width_rel_change_std": 0.47195871256087324,
+      "input_ac_snr_db_mean": 11.14952030258328,
+      "input_ac_snr_db_std": 1.7404628186575437,
+      "output_ac_snr_db_mean": 7.417735088500805,
+      "output_ac_snr_db_std": 1.199287278376404,
+      "snr_improvement_ac_db_mean": -3.731785214082474,
+      "snr_improvement_ac_db_std": 1.5813229866155467
     },
     {
       "noise_category": "muscle_artifact",
@@ -3114,7 +3708,13 @@
       "qrs_amp_rel_change_mean": 0.009853296451105822,
       "qrs_amp_rel_change_std": 0.012001057877309191,
       "qrs_width_rel_change_mean": -0.1737717016684692,
-      "qrs_width_rel_change_std": 0.36963680445474206
+      "qrs_width_rel_change_std": 0.36963680445474206,
+      "input_ac_snr_db_mean": 11.14952030258328,
+      "input_ac_snr_db_std": 1.7404628186575437,
+      "output_ac_snr_db_mean": 10.655932704313638,
+      "output_ac_snr_db_std": 2.008780883323158,
+      "snr_improvement_ac_db_mean": -0.4935875982696428,
+      "snr_improvement_ac_db_std": 2.16213380343285
     },
     {
       "noise_category": "muscle_artifact",
@@ -3145,7 +3745,13 @@
       "qrs_amp_rel_change_mean": 0.007196444927105724,
       "qrs_amp_rel_change_std": 0.009199007779638165,
       "qrs_width_rel_change_mean": -0.17649222435572995,
-      "qrs_width_rel_change_std": 0.3684094884034974
+      "qrs_width_rel_change_std": 0.3684094884034974,
+      "input_ac_snr_db_mean": 11.14952030258328,
+      "input_ac_snr_db_std": 1.7404628186575437,
+      "output_ac_snr_db_mean": 11.15779737712974,
+      "output_ac_snr_db_std": 1.7420115832305416,
+      "snr_improvement_ac_db_mean": 0.008277074546459762,
+      "snr_improvement_ac_db_std": 0.008036398533787953
     },
     {
       "noise_category": "muscle_artifact",
@@ -3176,7 +3782,13 @@
       "qrs_amp_rel_change_mean": 0.00811264075925434,
       "qrs_amp_rel_change_std": 0.008922894618145582,
       "qrs_width_rel_change_mean": -0.17521851109442296,
-      "qrs_width_rel_change_std": 0.3689776966086985
+      "qrs_width_rel_change_std": 0.3689776966086985,
+      "input_ac_snr_db_mean": 11.14952030258328,
+      "input_ac_snr_db_std": 1.7404628186575437,
+      "output_ac_snr_db_mean": 11.14952030258328,
+      "output_ac_snr_db_std": 1.7404628186575437,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     },
     {
       "noise_category": "muscle_artifact",
@@ -3207,7 +3819,13 @@
       "qrs_amp_rel_change_mean": -0.017063110884050613,
       "qrs_amp_rel_change_std": 0.012757840863148233,
       "qrs_width_rel_change_mean": 0.011986276724836722,
-      "qrs_width_rel_change_std": 0.022392685691543894
+      "qrs_width_rel_change_std": 0.022392685691543894,
+      "input_ac_snr_db_mean": 17.133618621855295,
+      "input_ac_snr_db_std": 1.692217008603786,
+      "output_ac_snr_db_mean": 10.560064592520522,
+      "output_ac_snr_db_std": 3.8507903226241793,
+      "snr_improvement_ac_db_mean": -6.573554029334768,
+      "snr_improvement_ac_db_std": 4.353149463305798
     },
     {
       "noise_category": "muscle_artifact",
@@ -3238,7 +3856,13 @@
       "qrs_amp_rel_change_mean": -0.007230372384650778,
       "qrs_amp_rel_change_std": 0.024257839715532917,
       "qrs_width_rel_change_mean": 0.01468211460719855,
-      "qrs_width_rel_change_std": 0.021150839026046742
+      "qrs_width_rel_change_std": 0.021150839026046742,
+      "input_ac_snr_db_mean": 17.133618621855295,
+      "input_ac_snr_db_std": 1.692217008603786,
+      "output_ac_snr_db_mean": 8.864857302265762,
+      "output_ac_snr_db_std": 3.346028704038315,
+      "snr_improvement_ac_db_mean": -8.26876131958953,
+      "snr_improvement_ac_db_std": 3.7498304056838965
     },
     {
       "noise_category": "muscle_artifact",
@@ -3269,7 +3893,13 @@
       "qrs_amp_rel_change_mean": -0.359332454540986,
       "qrs_amp_rel_change_std": 0.07134081090188726,
       "qrs_width_rel_change_mean": -0.1781843531399313,
-      "qrs_width_rel_change_std": 0.4709119573236336
+      "qrs_width_rel_change_std": 0.4709119573236336,
+      "input_ac_snr_db_mean": 17.133618621855295,
+      "input_ac_snr_db_std": 1.692217008603786,
+      "output_ac_snr_db_mean": 7.57800537140607,
+      "output_ac_snr_db_std": 1.260657370243297,
+      "snr_improvement_ac_db_mean": -9.55561325044922,
+      "snr_improvement_ac_db_std": 1.5537920996227175
     },
     {
       "noise_category": "muscle_artifact",
@@ -3300,7 +3930,13 @@
       "qrs_amp_rel_change_mean": 0.007393556874732757,
       "qrs_amp_rel_change_std": 0.008679168209456594,
       "qrs_width_rel_change_mean": -0.08887588777104853,
-      "qrs_width_rel_change_std": 0.18874585810062292
+      "qrs_width_rel_change_std": 0.18874585810062292,
+      "input_ac_snr_db_mean": 17.133618621855295,
+      "input_ac_snr_db_std": 1.692217008603786,
+      "output_ac_snr_db_mean": 11.213852352588582,
+      "output_ac_snr_db_std": 2.2587059788862516,
+      "snr_improvement_ac_db_mean": -5.91976626926671,
+      "snr_improvement_ac_db_std": 2.3702112407832763
     },
     {
       "noise_category": "muscle_artifact",
@@ -3331,7 +3967,13 @@
       "qrs_amp_rel_change_mean": 0.0031616496860134265,
       "qrs_amp_rel_change_std": 0.007877913416312651,
       "qrs_width_rel_change_mean": -0.09473781177586477,
-      "qrs_width_rel_change_std": 0.18618504518041187
+      "qrs_width_rel_change_std": 0.18618504518041187,
+      "input_ac_snr_db_mean": 17.133618621855295,
+      "input_ac_snr_db_std": 1.692217008603786,
+      "output_ac_snr_db_mean": 17.138116858512532,
+      "output_ac_snr_db_std": 1.6915569521948313,
+      "snr_improvement_ac_db_mean": 0.004498236657238852,
+      "snr_improvement_ac_db_std": 0.013512722272036719
     },
     {
       "noise_category": "muscle_artifact",
@@ -3362,7 +4004,13 @@
       "qrs_amp_rel_change_mean": 0.003663505150973554,
       "qrs_amp_rel_change_std": 0.006887248750022799,
       "qrs_width_rel_change_mean": -0.09370451267076424,
-      "qrs_width_rel_change_std": 0.1864438215057456
+      "qrs_width_rel_change_std": 0.1864438215057456,
+      "input_ac_snr_db_mean": 17.133618621855295,
+      "input_ac_snr_db_std": 1.692217008603786,
+      "output_ac_snr_db_mean": 17.133618621855295,
+      "output_ac_snr_db_std": 1.692217008603786,
+      "snr_improvement_ac_db_mean": 0.0,
+      "snr_improvement_ac_db_std": 0.0
     }
   ],
   "aggregate": {
@@ -3375,6 +4023,10 @@
       "std": 10.246950765959598
     },
     "achieved_snr_db": {
+      "mean": 9.0,
+      "std": 10.246950765959598
+    },
+    "achieved_power_ratio_snr_db": {
       "mean": 9.0,
       "std": 10.246950765959598
     },
@@ -3405,6 +4057,18 @@
     "snr_db": {
       "mean": 3.8150130287929103,
       "std": 8.018352990214504
+    },
+    "input_ac_snr_db": {
+      "mean": 2.134272830264782,
+      "std": 10.40968799669508
+    },
+    "output_ac_snr_db": {
+      "mean": 3.8150130287929103,
+      "std": 8.018352990214504
+    },
+    "snr_improvement_ac_db": {
+      "mean": 1.6807401985281285,
+      "std": 6.0215354579634255
     },
     "rpeak_sensitivity": {
       "mean": 0.9893405205905205,
@@ -3475,5 +4139,18 @@
     "max_abs_dev": 3.552713678800501e-15,
     "mean_abs_dev": 3.153756139129722e-16
   },
-  "verified_achieved_vs_target": true
+  "verified_achieved_vs_target": true,
+  "versions": {
+    "python": "3.14.7",
+    "python_implementation": "CPython",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "pandas": "2.3.3",
+    "wfdb": "4.3.1",
+    "matplotlib": "3.11.2",
+    "scikit_learn": "1.9.1",
+    "joblib": "1.6.0",
+    "seaborn": "0.13.2"
+  }
 }

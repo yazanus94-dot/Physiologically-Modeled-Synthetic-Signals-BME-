@@ -1,0 +1,164 @@
+{
+  "records": [
+    "118",
+    "119"
+  ],
+  "nstdb_records": [
+    "bw",
+    "em",
+    "ma"
+  ],
+  "target_snr_db": [
+    -6,
+    0,
+    6,
+    12,
+    18,
+    24
+  ],
+  "duration_s": 10.0,
+  "segments_per_cell": 10,
+  "seed": 3,
+  "powerline_hz": 50.0,
+  "peak_tolerance_ms": 150.0,
+  "n_rows": 2160,
+  "aggregate": {
+    "segment": {
+      "mean": 4.5,
+      "std": 2.8722813232690143
+    },
+    "target_snr_db": {
+      "mean": 9.0,
+      "std": 10.246950765959598
+    },
+    "achieved_snr_db": {
+      "mean": 9.0,
+      "std": 10.246950765959598
+    },
+    "achieved_power_ratio_snr_db": {
+      "mean": 9.0,
+      "std": 10.246950765959598
+    },
+    "duration_s": {
+      "mean": 10.0,
+      "std": 0.0
+    },
+    "fs": {
+      "mean": 360.0,
+      "std": 0.0
+    },
+    "rmse": {
+      "mean": 0.46774993064448916,
+      "std": 0.5115943082715088
+    },
+    "nrmse": {
+      "mean": 0.1306154294636633,
+      "std": 0.14969284747314082
+    },
+    "prd": {
+      "mean": 102.61110262324046,
+      "std": 116.51361607708068
+    },
+    "pearson": {
+      "mean": 0.7510982060421066,
+      "std": 0.2518436027069966
+    },
+    "snr_db": {
+      "mean": 3.8150130287929103,
+      "std": 8.018352990214504
+    },
+    "input_ac_snr_db": {
+      "mean": 2.134272830264782,
+      "std": 10.40968799669508
+    },
+    "output_ac_snr_db": {
+      "mean": 3.8150130287929103,
+      "std": 8.018352990214504
+    },
+    "snr_improvement_ac_db": {
+      "mean": 1.6807401985281285,
+      "std": 6.0215354579634255
+    },
+    "rpeak_sensitivity": {
+      "mean": 0.9893405205905205,
+      "std": 0.03870775228157967
+    },
+    "rpeak_precision": {
+      "mean": 0.4325865182007898,
+      "std": 0.0642863199861841
+    },
+    "rpeak_f1": {
+      "mean": 0.5995442491920455,
+      "std": 0.06628643860444658
+    },
+    "rpeak_mae_ms": {
+      "mean": 7.762793629981129,
+      "std": 11.636625322009172
+    },
+    "rpeak_tp": {
+      "mean": 11.378240740740742,
+      "std": 0.9741989384481617
+    },
+    "rpeak_fp": {
+      "mean": 15.302314814814816,
+      "std": 3.3289963748635407
+    },
+    "rpeak_fn": {
+      "mean": 0.12175925925925926,
+      "std": 0.44251873512065526
+    },
+    "n_ref_peaks": {
+      "mean": 11.5,
+      "std": 0.8660254037844386
+    },
+    "n_detected_peaks": {
+      "mean": 26.680555555555557,
+      "std": 3.0078280072151156
+    },
+    "qrs_amp_rel_change": {
+      "mean": 0.011890628162415618,
+      "std": 0.24528548581821644
+    },
+    "qrs_width_rel_change": {
+      "mean": -0.225282826734272,
+      "std": 0.4346626865390673
+    },
+    "qrs_amp_ref": {
+      "mean": 2.5904999999999996,
+      "std": 0.24854023819092147
+    },
+    "qrs_amp_est": {
+      "mean": 2.615977953917597,
+      "std": 0.6473160879167157
+    },
+    "qrs_width_ms_ref": {
+      "mean": 5.973225458810229,
+      "std": 9.12994672792191
+    },
+    "qrs_width_ms_est": {
+      "mean": 5.537563352721325,
+      "std": 9.003403819636363
+    },
+    "snr_improvement_db": {
+      "mean": 1.6807401985281285,
+      "std": 6.0215354579634255
+    }
+  },
+  "figures": {
+    "report_waveforms": "report\\report_waveforms.png",
+    "report_rpeak": "report\\report_rpeak.png"
+  },
+  "versions": {
+    "python": "3.14.7",
+    "python_implementation": "CPython",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "pandas": "2.3.3",
+    "wfdb": "4.3.1",
+    "matplotlib": "3.11.2",
+    "scikit_learn": "1.9.1",
+    "joblib": "1.6.0",
+    "seaborn": "0.13.2"
+  }
+}

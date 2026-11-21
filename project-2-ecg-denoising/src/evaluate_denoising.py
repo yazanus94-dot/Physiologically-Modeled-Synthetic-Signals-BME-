@@ -266,18 +266,27 @@ def _zero_mean(x):
     return x - x.mean()
 
 
-def compute_segment_metrics(clean, estimate, fs, reference_peaks=None):
+def compute_segment_metrics(clean, estimate, fs, reference_peaks=None,
+                            mixture=None):
     """All metrics for one (clean, denoised) pair.
 
-    ``rmse`` / ``nrmse`` / ``prd`` / ``snr_db`` are computed after removing
-    the DC level from both signals (see ``_zero_mean``); ``pearson`` and the
-    R-peak / QRS morphology metrics are already offset-invariant.
+    Two SNR conventions are reported, deliberately **distinguished**
+    (Project 2 audit item 2):
 
-    Non-finite (NaN/inf) inputs raise a ``ValueError`` immediately — fail
-    fast with a clear message instead of propagating NaN into the CSV,
-    JSON, or figures.  (WFDB interpolates invalid samples in
-    ``load_real_ecg._clean_invalid_samples``, so a NaN here is a genuine
-    data-quality problem that should be surfaced.)
+    * ``input_ac_snr_db`` — the input AC (DC-removed) SNR of the mixture
+      (``snr_db(clean, mixture)``; when ``mixture`` is not supplied this
+      falls back to ``snr_db(clean, estimate)``).
+    * ``output_ac_snr_db`` — the output AC SNR of the denoised signal.
+    * ``snr_improvement_ac_db`` — ``output - input`` under the same AC
+      convention (like-with-like).
+    * ``achieved_power_ratio_snr_db`` — the *mixer's* convention:
+      power-ratio of the raw DC-inclusive signals
+      (``mean(x**2)``), as computed by
+      ``noise_mixer.mix_to_snr`` (`src/noise_mixer.py:93`).
+
+    ``rmse`` / ``nrmse`` / ``prd`` / ``snr_db`` are the waveform-error
+    metrics on DC-removed signals (see ``_zero_mean``, docstring at
+    ``src/evaluate_denoising.py:252-266``).
     """
     clean = np.asarray(clean, dtype=float)
     estimate = np.asarray(estimate, dtype=float)
@@ -291,13 +300,25 @@ def compute_segment_metrics(clean, estimate, fs, reference_peaks=None):
             "a denoising result on non-finite data")
     clean_z = _zero_mean(clean)
     est_z = _zero_mean(estimate)
+    base = estimate if mixture is None else np.asarray(mixture, dtype=float)
+    # AC (DC-removed) SNR: denoise_methods.snr_db computes
+    # 10*log10(mean(clean^2)/mean((clean-estimate)^2)) on the arrays given,
+    # so both sides must be zero-meaned first.
+    input_ac = snr_db(_zero_mean(clean), _zero_mean(base))
+    output_ac = snr_db(_zero_mean(clean), est_z)
     metrics = {
         "rmse": rmse(clean_z, est_z),
         "nrmse": nrmse(clean_z, est_z),
         "prd": prd(clean_z, est_z),
         "pearson": pearson_correlation(clean, estimate),
-        "snr_db": snr_db(clean_z, est_z),
+        "snr_db": output_ac,
+        "input_ac_snr_db": input_ac,
+        "output_ac_snr_db": output_ac,
     }
+    if np.isfinite(input_ac) and np.isfinite(output_ac):
+        metrics["snr_improvement_ac_db"] = output_ac - input_ac
+    else:
+        metrics["snr_improvement_ac_db"] = float("nan")
     if reference_peaks is not None:
         detected = detect_r_peaks(estimate, fs)
         metrics.update(rpeak_metrics(reference_peaks, detected, fs))

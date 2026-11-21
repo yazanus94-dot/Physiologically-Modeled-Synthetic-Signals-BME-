@@ -164,20 +164,20 @@ peaks, and HRV ≠ PRV throughout.
 | Record | HR ECG (bpm) | HR PPG (bpm) | SDNN ECG (ms) | SDNN PPG (ms) | Agreement | r (beat) | r (10 s smoothed) | lag (s) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | bidmc01 | 91.29 | 91.15 | 25.78 | 31.55 | 99.7 % | 0.514 | 0.528 | 0.50 |
-| bidmc02 | 91.00 | 90.64 | 16.94 | 50.43 | 98.9 % | 0.399 | 0.614 | 0.20 |
+| bidmc02 | 91.00 | 90.77 | 16.94 | 53.42 | 98.6 % | 0.392 | 0.614 | 0.20 |
 | bidmc03 | 77.00 | 76.38 | 63.16 | 56.67 | 93.6 % | 0.484 | 0.651 | 0.70 |
 
 Aggregate (mean over the 3 records):
 
 | Metric | Value |
 |---|---:|
-| Mean HR difference (PRV vs HRV) | **−0.45 %** |
-| Beat agreement within tolerance | **97.4 %** |
-| Interval-series Pearson r (lag-corrected) | 0.466 |
+| Mean HR difference (PRV vs HRV) | **−0.40 %** |
+| Beat agreement within tolerance | **97.3 %** |
+| Interval-series Pearson r (lag-corrected) | 0.463 |
 | Interval-series Pearson r (after 10 s smoothing) | 0.568 |
 | Mean inter-channel alignment lag | 0.47 s |
-| Mean SDNN difference | 69.94 % |
-| Mean RMSSD difference | 81.59 % |
+| Mean SDNN difference | 75.82 % |
+| Mean RMSSD difference | 84.58 % |
 | Mean LF/HF ratio difference | 506.56 % |
 
 Time-aligned monitor-reference comparisons (both series on a common
@@ -189,7 +189,7 @@ beat annotation — the `reference_note` field states this explicitly:
 | Record | ECG-derived HR vs monitor (MAE \| bias) | PPG-derived HR vs monitor (MAE \| bias) |
 |---|---|---|
 | bidmc01 | 1.12 \| +0.13 | 1.34 \| −0.18 |
-| bidmc02 | 1.07 \| −0.09 | 2.20 \| −0.21 |
+| bidmc02 | 1.07 \| −0.09 | 2.31 \| −0.09 |
 | bidmc03 | 2.85 \| +1.03 | 1.97 \| −0.01 |
 
 Independent cross-check against the monitor's own 1 Hz numerics (not

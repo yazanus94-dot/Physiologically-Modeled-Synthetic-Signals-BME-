@@ -10,7 +10,19 @@ deliberately (see README for how the residual error shows up in HRV).
 import numpy as np
 from scipy.signal import butter, filtfilt, find_peaks
 
-REFRACTORY_S = 0.35
+# Central configuration (P3.1): the supported pulse-rate band.  The
+# detector's refractory period is *derived* from the maximum so valid
+# pulses up to the declared maximum rate are identifiable, and the
+# downstream plausibility limits (``run_bidmc_experiment``:
+# ``iv_lo, iv_hi = 60/MAX, 60/MIN``) are consistent with it.
+MAX_PULSE_RATE_BPM = 200.0          # supported maximum pulse rate
+MIN_PULSE_RATE_BPM = 40.0           # supported minimum pulse rate
+REFRACTORY_S = 60.0 / MAX_PULSE_RATE_BPM
+
+# Consistent plausibility interval window [0.30, 1.50] s, derived from the
+# same central configuration (40–200 bpm supported; see
+# ``run_bidmc_experiment`` for the downstream filter).
+PL_LO_S, PL_HI_S = 60.0 / MAX_PULSE_RATE_BPM, 60.0 / MIN_PULSE_RATE_BPM
 
 
 def _bandpass(signal, fs, low=0.5, high=8.0, order=3):
@@ -134,7 +146,7 @@ def detect_peaks(ppg, fs, local_adaptive=True):
     # stops.  Long gaps themselves (missed beats / sensor dropout) are NOT
     # repaired by deleting a real peak — they are flagged downstream by
     # quality_assessment.interval_suspects and compare_intervals.
-    plausibility_lo, plausibility_hi = 0.30, 2.00  # seconds between pulses
+    plausibility_lo, plausibility_hi = PL_LO_S, PL_HI_S
     keep = list(peaks)
     dropped = True
     while dropped and len(keep) > 2:

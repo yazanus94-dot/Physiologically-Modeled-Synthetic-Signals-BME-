@@ -72,6 +72,11 @@ def plot_sample_comparison(clean, noisy, outputs, fs, path,
     return path
 
 
+def _fmean(vals):
+    vals = [v for v in vals if v is not None and np.isfinite(v)]
+    return float(np.mean(vals)) if vals else float("nan")
+
+
 def _group_rows(rows, key):
     grouped = {}
     for row in rows:
@@ -270,6 +275,110 @@ def plot_powerline_ablation(rows, path, title=None):
         ax.grid(alpha=0.3, axis="y")
     if title:
         fig.suptitle(title)
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
+def plot_tolerance_sensitivity(rows, path, title=None):
+    """Mean R-peak sensitivity / precision / F1 per tolerance.
+
+    Bars: mean sensitivity, mean precision, mean F1 at ±50, ±100, ±150 ms.
+    """
+    tols = sorted({r["tolerance_ms"] for r in rows})
+    fig, ax = plt.subplots(1, 1, figsize=(8.5, 4.5))
+    metrics = ["rpeak_sensitivity", "rpeak_precision", "rpeak_f1"]
+    x = np.arange(len(tols))
+    width = 0.2
+    colors = ["#D68910", "#1B3A6B", "#8E44AD"]
+    for i, (m, c) in enumerate(zip(metrics, colors)):
+        vals = [_fmean([r[m] for r in rows if r["tolerance_ms"] == tl
+                        and np.isfinite(r[m])]) for tl in tols]
+        ax.bar(x + (i - 1) * width, vals, width, label=m.replace("_", " "),
+               color=c, edgecolor="k", alpha=0.8)
+    ax.set_xticks(x)
+    ax.set_xticklabels([f"±{t:.0f} ms" for t in tols])
+    ax.set_ylabel("Mean R-peak metric (one-to-one)")
+    ax.set_ylim(0, 1)
+    ax.set_title(title or "R-peak sensitivity / precision / F1 at "
+                          "different match tolerances")
+    ax.legend(loc="upper right", fontsize=9, frameon=False)
+    ax.grid(alpha=0.3, axis="y")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
+def plot_report_waveforms(clean, noisy, methods, fs, path,
+                          achieved=None, title=None):
+    """Stacked waveform panel for the report: clean, noisy, denoised
+    (bandpass), and the error waveform (estimate - clean)."""
+    clean = np.asarray(clean, dtype=float)
+    noisy = np.asarray(noisy, dtype=float)
+    t = np.arange(clean.size) / fs
+
+    est = np.asarray(methods.get("bandpass_0.5_40hz", noisy), dtype=float)
+    err = est - clean
+
+    def _rmse(a, b):
+        return float(np.sqrt(np.mean((a - b) ** 2)))
+
+    n_rows = 4
+    fig, axes = plt.subplots(n_rows, 1, figsize=(11, 1.4 * n_rows),
+                             sharex=True)
+    axes = np.atleast_1d(axes)
+
+    axes[0].plot(t, clean, color="#1B3A6B", lw=0.9)
+    axes[0].set_title(f"Clean reference ({clean.size / fs:.1f} s segment)"
+                      + (f", mean {clean.mean():+.4f} mV" if achieved is None
+                         else ""))
+    axes[0].set_ylabel("mV")
+    axes[1].plot(t, noisy, color="#C0392B", lw=0.9)
+    axes[1].set_title(f"Noisy input (mixer SNR {achieved:.2f} dB)"
+                      if achieved is not None else "Noisy input")
+    axes[1].set_ylabel("mV")
+    axes[2].plot(t, est, color="#27AE60", lw=0.9)
+    axes[2].set_title("Denoised (bandpass 0.5-40 Hz) — "
+                      f"RMSE vs clean = {_rmse(clean, est):.5f} mV")
+    axes[2].set_ylabel("mV")
+    axes[3].plot(t, err, color="#D68910", lw=0.7, alpha=0.85)
+    axes[3].axhline(0, color="k", lw=0.4)
+    axes[3].set_title(f"Error waveform (est - clean); "
+                      f"RMSE = {_rmse(clean, est):.5f} mV, "
+                      f"mean = {err.mean():+.5f} mV")
+    axes[3].set_ylabel("error (mV)")
+    axes[3].set_xlabel("Time (s)")
+    for ax in axes:
+        ax.grid(alpha=0.25)
+    fig.suptitle(title or "Report: clean vs noisy vs denoised (bandpass) + error")
+    fig.tight_layout(rect=(0, 0.02, 1, 0.97))
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
+def plot_report_rpeak(clean, est, fs, path, method="bandpass_0.5_40hz",
+                      ref_peaks=None, det_peaks=None, title=None):
+    """Waveform panel with R-peak overlays: clean signal, reference R-peaks
+    (expert `.atr` or automated detector) and detected peaks of ``est``."""
+    clean = np.asarray(clean, dtype=float)
+    est = np.asarray(est, dtype=float)
+    t = np.arange(clean.size) / fs
+
+    fig, ax = plt.subplots(1, 1, figsize=(11, 3.5))
+    ax.plot(t, clean, color="#1B3A6B", lw=0.9, label="Clean")
+    if ref_peaks is not None and len(ref_peaks):
+        ax.plot(ref_peaks / fs, clean[ref_peaks], "v", color="#C0392B",
+                ms=8, label=f"Reference R-peaks (n={len(ref_peaks)})")
+    if det_peaks is not None and len(det_peaks):
+        ax.plot(det_peaks / fs, est[det_peaks], "^", color="#27AE60",
+                ms=6, label=f"Detected peaks of {method} (n={len(det_peaks)})")
+    ax.set_title(title or "R-peak overlay: reference vs detected")
+    ax.set_xlabel("Time (s)"); ax.set_ylabel("mV")
+    ax.legend(loc="upper right", fontsize=8, frameon=False)
+    ax.grid(alpha=0.3)
     fig.tight_layout()
     fig.savefig(path, dpi=150)
     plt.close(fig)

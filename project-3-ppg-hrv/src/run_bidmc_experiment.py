@@ -48,7 +48,8 @@ sys.path.insert(0, HERE)
 from load_bidmc import (DEFAULT_DATA_DIR, list_local_records,  # noqa: E402
                         load_record, download_records)
 from ppg_preprocessing import preprocess_ppg, assess_signal_quality  # noqa: E402
-from peak_detect import detect_peaks  # noqa: E402
+from peak_detect import (detect_peaks, MAX_PULSE_RATE_BPM,  # noqa: E402
+                          MIN_PULSE_RATE_BPM, REFRACTORY_S)  # noqa: E402
 from ecg_reference import (detect_r_peaks, rr_intervals,  # noqa: E402
                            estimate_interval_lag, align_interval_series)
 from hrv_metrics import (time_domain_metrics, frequency_domain_metrics,  # noqa: E402
@@ -270,13 +271,13 @@ def analyse_record(bundle):
         raise ValueError("too few intervals (rr=%d, pi=%d) in %s"
                          % (rr_s.size, pi_s.size, name))
 
-    # Physiological-range artifact rejection (40-200 bpm), applied to BOTH
-    # series before any variability metric: sensor dropouts and detector
-    # dropouts otherwise enter as multi-second "intervals" and dominate
-    # SDNN/RMSSD (a single 8 s gap inflates SDNN by hundreds of ms). This is
-    # standard first-pass HRV cleaning; every rejection is counted and
-    # reported, never silently discarded.
-    iv_lo, iv_hi = 60.0 / 200.0, 60.0 / 40.0      # 0.30 s .. 1.50 s
+    # Physiological-range artifact rejection, applied to BOTH series before
+    # any variability metric.  The window is the central pulse-rate config:
+    # [MIN_PULSE_RATE_BPM, MAX_PULSE_RATE_BPM] -> [iv_lo, iv_hi] seconds.
+    # This is consistent with the detector's refractory period
+    # (REFRACTORY_S = 60/MAX_PULSE_RATE_BPM, from peak_detect.py) and the
+    # detector's plausibility window (peak_detect.PL_LO_S/PL_HI_S).
+    iv_lo, iv_hi = 60.0 / MAX_PULSE_RATE_BPM, 60.0 / MIN_PULSE_RATE_BPM  # 0.30 .. 1.50 s
     rr_ok = (rr_s >= iv_lo) & (rr_s <= iv_hi)
     pi_ok = (pi_s >= iv_lo) & (pi_s <= iv_hi)
     n_rr_rejected = int((~rr_ok).sum())
@@ -388,6 +389,7 @@ def analyse_record(bundle):
             "ecg_rr_kept": int(rr_f.size), "ecg_rr_rejected": n_rr_rejected,
             "ppg_pi_kept": int(pi_f.size), "ppg_pi_rejected": n_pi_rejected,
         },
+        "_iv_limits": (iv_lo, iv_hi),
         # ---- the two quantities, never conflated ----
         "ecg_hrv": {"source": "ECG R-R intervals (WFDB XQRS)",
                     "reference_kind": (
@@ -445,6 +447,41 @@ def analyse_record(bundle):
         name, raw_ppg, ppg_f, fs, ppg_peaks, ecg_peaks=ecg_peaks,
         quality_raw=quality_raw)
     return out
+
+
+def _plot_interval_scatter(t, iv_s, path, label, suspect_mask=None,
+                           iv_lo=0.30, iv_hi=1.50,
+                           title_extra=""):
+    """Scatter of intervals (ms) vs midpoint time; suspect intervals are
+    starred in red, and the figure caption reports how many were flagged
+    and their effect on SDNN (the variability metric they contaminate)."""
+    t = np.asarray(t, dtype=float)
+    iv_ms = np.asarray(iv_s, dtype=float) * 1000.0
+    n = iv_ms.size
+    if suspect_mask is None:
+        suspect_mask = np.zeros(n, dtype=bool)
+    suspect_mask = np.asarray(suspect_mask, dtype=bool) & (n > 0)
+
+    fig, ax = plt.subplots(1, 1, figsize=(11, 3.5))
+    ok = np.isfinite(t) & np.isfinite(iv_ms)
+    ax.scatter(t[ok], iv_ms[ok], s=6, color="#27AE60", label=f"{label} intervals")
+    # implausible (outside the hard window) on the filtered series
+    out = ok & ((iv_ms < iv_lo * 1000.0) | (iv_ms > iv_hi * 1000.0))
+    if out.any():
+        ax.scatter(t[out], iv_ms[out], s=45, color="#C0392B",
+                   marker="X", label="Outside hard window")
+    if suspect_mask.any():
+        mask = ok & suspect_mask
+        ax.scatter(t[mask], iv_ms[mask], s=30, color="#8E44AD",
+                   marker="*", label=f"Suspect flagged ({int(mask.sum())})")
+    ax.set_xlabel("Time (s)"); ax.set_ylabel("Interval (ms)")
+    ax.set_title(f"{label} interval scatter (ms)" + title_extra)
+    ax.legend(loc="upper right", fontsize=8, frameon=False)
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
 
 
 def _plot_record(res, out_dir):
@@ -627,6 +664,48 @@ def main(argv=None):
             _plot_record(res, out_dir)
         except Exception as exc:  # noqa: BLE001
             print(f"  [plot skipped] {res['record']}: {exc}")
+        # P3.3 — interval scatter with suspicious-interval flags
+        try:
+            s = res["_series"]
+            iv_lo, iv_hi = res.get("_iv_limits", (0.30, 1.50))
+            qa = res.get("quality_assessment", {})
+            inter = qa.get("intervals", {}) if isinstance(qa, dict) else {}
+            # suspect mask on the filtered PPG series
+            iv_ms = np.asarray(s["pi_s"]) * 1000.0
+            hard = (iv_ms < iv_lo * 1000.0) | (iv_ms > iv_hi * 1000.0)
+            n_suspect = int(qa.get("n_suspect_intervals", 0)) \
+                if isinstance(qa, dict) else 0
+            if not n_suspect:
+                n_suspect = int(np.count_nonzero(hard))
+            extra = ("n_suspect=%d, hard_limits_s=[%g, %g]"
+                     % (n_suspect, iv_lo, iv_hi))
+            _plot_interval_scatter(
+                s["t_pi"], s["pi_s"],
+                os.path.join(out_dir,
+                             f"interval_scatter_{res['record']}.png"),
+                label="PPG (PRV)", suspect_mask=hard,
+                iv_lo=iv_lo, iv_hi=iv_hi, title_extra="\n" + extra)
+            # Effect of suspects on SDNN: SDNN with vs without suspect intervals
+            if hard.any():
+                all_sdnn = res["ppg_prv"]["time_domain"]["sdnn_ms"]
+                clean_sdnn = time_domain_metrics(
+                    np.asarray(s["pi_s"])[~hard] * 1000.0)["sdnn_ms"]
+                if np.isfinite(all_sdnn) and np.isfinite(clean_sdnn):
+                    fig, ax = plt.subplots(1, 1, figsize=(5, 3.5))
+                    ax.bar(["with suspect", "without suspect"],
+                           [all_sdnn, clean_sdnn], color="#1B3A6B",
+                           alpha=0.8)
+                    ax.set_ylabel("SDNN (ms)")
+                    ax.set_title(f"{res['record']}: SDNN inflation from "
+                                 f"suspicious intervals")
+                    ax.grid(alpha=0.3, axis="y")
+                    fig.tight_layout()
+                    fig.savefig(os.path.join(
+                        out_dir,
+                        f"sdnn_suspect_effect_{res['record']}.png"), dpi=150)
+                    plt.close(fig)
+        except Exception as exc:  # noqa: BLE001
+            print(f"  [interval scatter skipped] {res['record']}: {exc}")
     _plot_aggregate(per_record, out_dir)
     try:
         bundle = load_record(per_record[0]["record"], data_dir=DEFAULT_DATA_DIR)
