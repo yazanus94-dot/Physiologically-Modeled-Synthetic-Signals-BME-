@@ -202,12 +202,13 @@ def _real_segments():
         return list(csv.DictReader(fh))
 
 
-def test_real_segments_have_at_least_five_per_cell():
-    """Every (noise x SNR) cell needs >= 5 independent segments.
+def test_real_segments_have_at_least_ten_per_cell():
+    """Every (noise x SNR) cell needs >= 10 independent segments.
 
     Regression: the first real run produced 1 segment per cell (`--segments`
-    defaulted to 1), so the summary average was a single noisy sample.  With
-    5 segments the mean gain is a 5-sample average with reproducible seeds.
+    defaulted to 1), so the summary average was a single noisy sample.
+    Master configuration: 10 independent trials per recording (the
+    audit asked for >= 5, the implemented default is 10).
     """
     rows = _real_segments()
     cells = {}
@@ -216,8 +217,18 @@ def test_real_segments_have_at_least_five_per_cell():
                          set()).add(r["segment"])
     assert cells, "results_segments.csv is empty"
     seg_counts = {c: len(v) for c, v in cells.items()}
-    assert all(n >= 5 for n in seg_counts.values()), seg_counts
+    assert all(n >= 10 for n in seg_counts.values()), seg_counts
     assert len(cells) >= 3 * 6, "all 3 noise types x 6 SNR levels expected"
+
+
+def test_real_summary_has_a_row_per_cell_and_method():
+    import csv
+    if not os.path.exists(SUMMARY_CSV):
+        pytest.skip("results_summary.csv not present")
+    with open(SUMMARY_CSV, newline="") as fh:
+        rows = list(csv.DictReader(fh))
+    cells = {(r["noise_category"], r["target_snr_db"]) for r in rows}
+    assert len(cells) >= 3 * 6
 
 
 def test_real_segments_cover_all_snr_levels_and_noise_types():
@@ -236,11 +247,84 @@ def test_real_achieved_snr_matches_target():
     assert worst < 1e-6, worst
 
 
-def test_real_summary_has_a_row_per_cell_and_method():
+# ---------------------------------------------------------------------------
+# Predefined 150 ms tolerance + F1 in outputs (audit items 3 & 2)
+# ---------------------------------------------------------------------------
+
+def test_peak_tolerance_is_predefined_150ms():
+    """The R-peak matching tolerance is the predefined 150 ms — never
+    tuned to the data."""
+    from evaluate_denoising import DEFAULT_PEAK_TOLERANCE_S
+    assert DEFAULT_PEAK_TOLERANCE_S == pytest.approx(0.15)
+
+
+def _load_csv(path):
+    if not os.path.exists(path):
+        pytest.skip(f"{os.path.basename(path)} not present — run the "
+                    f"real experiment first")
     import csv
-    if not os.path.exists(SUMMARY_CSV):
-        pytest.skip("results_summary.csv not present")
-    with open(SUMMARY_CSV, newline="") as fh:
-        rows = list(csv.DictReader(fh))
-    cells = {(r["noise_category"], r["target_snr_db"]) for r in rows}
-    assert len(cells) >= 3 * 6
+    with open(path, newline="") as fh:
+        return list(csv.DictReader(fh))
+
+
+def test_summary_csv_has_f1_column():
+    """The aggregated summary CSV carries the R-peak F1 mean/std columns."""
+    rows = _load_csv(SUMMARY_CSV)
+    cols = set(rows[0].keys())
+    assert "rpeak_f1_mean" in cols
+    assert "rpeak_f1_std" in cols
+    # F1 must lie in [0, 1]
+    vals = [float(r["rpeak_f1_mean"]) for r in rows
+            if r["rpeak_f1_mean"]]
+    assert vals
+    assert all(0.0 <= v <= 1.0 for v in vals)
+
+
+def test_segments_csv_has_f1_column():
+    """Trial-level CSV carries the R-peak F1 per segment."""
+    rows = _load_csv(SEGMENTS_CSV)
+    assert "rpeak_f1" in rows[0]
+
+
+def test_metrics_json_exists_with_tolerance():
+    """The real-run JSON records the methodology and predefined tolerance."""
+    import json
+    metrics_json = os.path.join(REPO, "outputs", "real", "metrics.json")
+    if not os.path.exists(metrics_json):
+        pytest.skip("outputs/real/metrics.json not present — run the real "
+                    "experiment first")
+    with open(metrics_json) as fh:
+        data = json.load(fh)
+    assert data["peak_tolerance_ms"] == pytest.approx(150.0)
+    assert data["tolerance_s"] == pytest.approx(0.15)
+    assert data["verified_achieved_vs_target"] is True
+    assert data["n_rows"] > 0
+
+
+def test_powerline_ablation_artifacts():
+    """The powerline ablation ran: JSON + figure exist with rows."""
+    import json
+    ablation_json = os.path.join(REPO, "outputs", "real",
+                                 "powerline_ablation.json")
+    if not os.path.exists(ablation_json):
+        pytest.skip("powerline_ablation.json not present — run the real "
+                    "experiment first")
+    with open(ablation_json) as fh:
+        rows = json.load(fh)
+    assert rows, "powerline ablation JSON is empty"
+    freqs = {r["freq_hz"] for r in rows}
+    assert freqs == {50.0, 60.0}
+    methods = {r["method"] for r in rows}
+    assert "notch_50hz" in methods and "notch_60hz" in methods
+
+
+def test_new_figures_exist():
+    """RMSE, PRD, morphology, noise-type, powerline figures are saved."""
+    figs = ["rmse_by_method.png", "prd_by_method.png",
+            "morphology_by_method.png", "noise_type_comparison.png",
+            "powerline_ablation_snr.png", "rpeak_f1_by_snr.png"]
+    for name in figs:
+        path = os.path.join(REPO, "outputs", "real", name)
+        if not os.path.exists(path):
+            pytest.skip(f"{name} not present — run the real experiment first")
+        assert os.path.getsize(path) > 0, name

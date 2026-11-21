@@ -3,6 +3,7 @@ import os
 import sys
 
 import numpy as np
+import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
@@ -101,3 +102,97 @@ def test_metrics_still_penalise_a_delayed_estimate():
     m = compute_segment_metrics(clean, delayed, fs)
     assert m["snr_db"] < 20
     assert m["pearson"] < 0.99
+
+
+# ---------------------------------------------------------------------------
+# R-peak F1 (audit item: F1 in metrics)
+# ---------------------------------------------------------------------------
+
+def test_rpeak_f1_metric():
+    """F1 = 2·P·S/(P + S), computed from the matched pairs."""
+    from evaluate_denoising import rpeak_metrics
+    # ref at 1000, 2000; det at 1005, 2005 -> both within ±38 samples
+    # (150 ms at 250 Hz) -> tp = 2 -> S = P = 1 -> F1 = 1
+    m = rpeak_metrics([1000, 2000], [1005, 2005], fs=250.0)
+    assert m["rpeak_f1"] == pytest.approx(1.0)
+    # ref at 1000, 2000; det at 1000, 3000 -> only ref 1000 matches
+    # (ref 2000 is 1000 samples away > tolerance) -> tp = 1
+    m2 = rpeak_metrics([1000, 2000], [1000, 3000], fs=250.0)
+    assert m2["rpeak_tp"] == 1
+    assert m2["rpeak_f1"] == pytest.approx(0.5)
+    # no peaks at all -> NaN, not a divide-by-zero
+    m3 = rpeak_metrics([], [], fs=250.0)
+    assert np.isnan(m3["rpeak_f1"])
+
+
+# ---------------------------------------------------------------------------
+# NaN / infinity handling (audit item: NaN/infinity handling)
+# ---------------------------------------------------------------------------
+
+def test_compute_segment_metrics_rejects_nonfinite_inputs():
+    """Fail fast with a clear error on NaN/inf rather than propagating
+    NaN into CSV/JSON/figures."""
+    from evaluate_denoising import compute_segment_metrics
+    n = 3000
+    clean = _waveform(n, 250)
+    bad_nan = clean.copy(); bad_nan[1000] = np.nan
+    with pytest.raises(ValueError, match="non-finite"):
+        compute_segment_metrics(bad_nan, clean, 250)
+    bad_inf = clean.copy(); bad_inf[1000] = np.inf
+    with pytest.raises(ValueError, match="non-finite"):
+        compute_segment_metrics(bad_inf, clean, 250)
+    # finite input still works
+    m = compute_segment_metrics(clean, clean, 250)
+    assert np.isfinite(m["rmse"])
+
+
+def test_median_filter_output_finite_and_shaped():
+    """median_filter_baseline_removal returns a finite, same-shape array."""
+    from denoise_methods import median_filter_baseline_removal
+    n = 3000
+    clean = _waveform(n, 250)
+    est = median_filter_baseline_removal(clean, 250)[0]
+    assert est.shape == clean.shape
+    assert np.all(np.isfinite(est))
+
+
+# ---------------------------------------------------------------------------
+# Filter edge effects (audit item: filter edge effects)
+# ---------------------------------------------------------------------------
+
+def test_filter_edge_effects():
+    """Zero-phase filters (filtfilt) handle edges via reflection; outputs
+    are finite and close to the input at the very start/end."""
+    from denoise_methods import (bandpass_filter, notch_filter,
+                                 median_filter_baseline_removal)
+    fs, n = 250, 3000
+    clean = _waveform(n, fs) + 0.1
+    for fn in (bandpass_filter, notch_filter):
+        est = fn(clean, fs)
+        assert np.all(np.isfinite(est)), fn.__name__
+        assert est.shape == clean.shape
+        # within 25 ms of either end the filter output should track the
+        # input (filtfilt is edge-reflecting; allow a loose bound)
+        edge = max(1, int(0.025 * fs))
+        assert np.max(np.abs(est[:edge] - clean[:edge])) < 1.0, fn.__name__
+        assert np.max(np.abs(est[-edge:] - clean[-edge:])) < 1.0, fn.__name__
+    est_m, _ = median_filter_baseline_removal(clean, fs)
+    assert np.all(np.isfinite(est_m))
+    assert est_m.shape == clean.shape
+
+
+# ---------------------------------------------------------------------------
+# Deterministic experiment generation (audit item)
+# ---------------------------------------------------------------------------
+
+def test_make_clean_and_noisy_is_deterministic():
+    """Same seed -> byte-identical clean, noisy and component arrays."""
+    from generate_noisy_signal import make_clean_and_noisy
+    kwargs = dict(duration_s=10, fs=250, seed=3)
+    c1, n1, *_ = make_clean_and_noisy(**kwargs)
+    c2, n2, *_ = make_clean_and_noisy(**kwargs)
+    assert np.array_equal(c1, c2)
+    assert np.array_equal(n1, n2)
+    # a different seed changes the output
+    c3, _, *_ = make_clean_and_noisy(duration_s=10, fs=250, seed=4)
+    assert not np.array_equal(c1, c3)

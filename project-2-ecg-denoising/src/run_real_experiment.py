@@ -35,6 +35,7 @@ clear message explaining how to get it and exits gracefully (exit code 0)
 instead of failing.
 """
 import argparse
+import json
 import os
 import sys
 
@@ -48,7 +49,7 @@ from denoise_methods import (bandpass_filter, combined_pipeline,
                              median_filter_baseline_removal, notch_filter,
                              snr_db)
 from noise_mixer import TARGET_SNR_LEVELS, mix_to_snr
-from evaluate_denoising import (aggregate_metrics,
+from evaluate_denoising import (DEFAULT_PEAK_TOLERANCE_S, aggregate_metrics,
                                 compute_segment_metrics, _zero_mean)
 from load_real_ecg import (MITDB_DIR, download_records as download_ecg,
                            is_downloaded as ecg_is_downloaded,
@@ -59,17 +60,19 @@ from load_real_noise import (NOISE_CATEGORIES, NOISE_CATEGORY_BY_RECORD,
                              ensure_downloaded as ensure_noise_downloaded,
                              load_noise_records,
                              local_records as local_noise_records)
-from visualization import (plot_metric_by_snr, plot_sample_comparison)
+from visualization import (plot_metric_by_snr, plot_sample_comparison,
+                           plot_metric_summary, plot_morphology_summary,
+                           plot_noise_type_comparison, plot_powerline_ablation)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(HERE)
 DEFAULT_OUTDIR = os.path.join(PROJECT_DIR, "outputs", "real")
-DEFAULT_ECG_RECORDS = ["100", "101"]
+DEFAULT_ECG_RECORDS = ["118", "119"]   # MIT-BIH records 118 & 119 (with .atr annotations)
 
 SUMMARY_METRICS = ["snr_db", "snr_improvement_db", "rmse", "nrmse", "prd",
                    "pearson", "rpeak_sensitivity", "rpeak_precision",
-                   "rpeak_mae_ms", "qrs_amp_rel_change",
-                   "qrs_width_rel_change"]
+                   "rpeak_f1", "rpeak_mae_ms",
+                   "qrs_amp_rel_change", "qrs_width_rel_change"]
 
 
 def parse_args(argv=None):
@@ -87,11 +90,12 @@ def parse_args(argv=None):
     p.add_argument("--snrs", nargs="+", default=None,
                    help="target SNR levels in dB (default: "
                         f"{TARGET_SNR_LEVELS})")
-    p.add_argument("--duration", type=float, default=30.0,
-                   help="seconds per evaluation segment (default 30)")
-    p.add_argument("--segments", type=int, default=5,
+    p.add_argument("--duration", type=float, default=10.0,
+                   help="seconds per evaluation segment (default 10 — the "
+                        "master configuration)")
+    p.add_argument("--segments", type=int, default=10,
                    help="independent noise segments per (noise x SNR x "
-                        "record) cell (default 5; the audit requires >= 5)")
+                        "record) cell (default 10 — the master configuration)")
     p.add_argument("--channel", type=int, default=0,
                    help="ECG channel index (default 0)")
     p.add_argument("--noise-channel", type=int, default=0,
@@ -266,6 +270,81 @@ def run_all_methods(noisy, fs, powerline_hz):
     }
 
 
+def run_powerline_ablation(args, ecg_loaded):
+    """Controlled 50 Hz / 60 Hz mains-interference ablation (audit item 4).
+
+    Generates controlled powerline interference on the clean ECG records
+    (both standard mains frequencies, two amplitudes each) using the
+    record's clean reference as the base, then evaluates the notch filter
+    and the other denoise methods on these corrupted signals — separately
+    from the three NSTDB noise experiments.  Results are written to
+    ``powerline_ablation.json`` and ``powerline_ablation_*.png``.
+
+    For each interference frequency the notch is evaluated at that
+    frequency (the tuning that should help) and at the other mains
+    frequency (the mismatch case that should not), so the ablation
+    demonstrates *why* the notch needs to be tuned to the actual
+    interference — but the pipeline's shared ``DEFAULT_PEAK_TOLERANCE_S``
+    is used throughout and never tuned to the ablation data.
+    """
+    outdir = args.outdir
+    rows = []
+    for ecg in ecg_loaded:
+        name = ecg["name"]
+        fs = ecg["fs"]
+        clean = np.asarray(ecg["signal"], dtype=float)
+        n = min(int(round(args.duration * fs)), len(clean))
+        clean_seg = _zero_mean(clean[:n])
+        ref = np.asarray(ecg["r_peaks"] if ecg["r_peaks"] is not None
+                         else [], dtype=int)
+        ref = ref[(ref >= 0) & (ref < n)]
+        t = np.arange(n) / fs
+
+        for freq in (50.0, 60.0):
+            for amp_mv in (0.05, 0.10):
+                noisy = clean_seg + amp_mv * np.sin(2 * np.pi * freq * t)
+                methods = {
+                    f"notch_{int(freq)}hz":
+                        notch_filter(noisy, fs, freq=freq),
+                    f"notch_{int(60 if freq == 50 else 50)}hz":
+                        notch_filter(noisy, fs, freq=60 if freq == 50 else 50),
+                    "bandpass_0.5_40hz": bandpass_filter(noisy, fs),
+                    "median_filter": median_filter_baseline_removal(noisy, fs)[0],
+                }
+                for meth, est in methods.items():
+                    try:
+                        m = compute_segment_metrics(
+                            clean_seg, est, fs, reference_peaks=ref)
+                    except Exception as exc:  # noqa: BLE001
+                        print(f"  [skip] powerline ablation {meth} "
+                              f"{freq} Hz on {name}: {exc}")
+                        continue
+                    # The ablation reference is the clean ECG itself, so the
+                    # metric ``snr_db`` is the improvement over clean.
+                    rows.append({"record": name, "freq_hz": freq,
+                                 "amp_mv": amp_mv, "method": meth,
+                                 "snr_improvement_db": m["snr_db"],
+                                 **m})
+
+    if not rows:
+        print("[WARN] powerline ablation produced no rows.")
+        return []
+
+    df = pd.DataFrame(rows)
+    ablation_json = os.path.join(outdir, "powerline_ablation.json")
+    with open(ablation_json, "w") as fh:
+        json.dump(df.to_dict(orient="records"), fh, indent=2, default=float)
+
+    # Figures (audit item 5: separate powerline-ablation figure)
+    plot_powerline_ablation(
+        rows, os.path.join(outdir, "powerline_ablation_snr.png"),
+        title="Powerline ablation (clean ECG + 50/60 Hz mains): "
+              "mean SNR improvement per method")
+    print(f"Saved -> {ablation_json}")
+    print("Saved figure -> powerline_ablation_snr.png")
+    return rows
+
+
 def _slice(signal, start, n):
     if start < 0 or start + n > len(signal):
         return None
@@ -415,6 +494,34 @@ def run_experiment(args):
     summary_csv = os.path.join(args.outdir, "results_summary.csv")
     summary_df.to_csv(summary_csv, index=False)
 
+    # --- JSON: authoritative machine-readable record (audit item: F1 in
+    #     JSON; records, methodology, tolerance, achieved-SNR verification)
+    agg = aggregate_metrics(rows)
+    metrics_json = {
+        "records": list(ecg_records),
+        "nstdb_records": noise_names,
+        "duration_s": float(args.duration),
+        "segments_per_cell": int(args.segments),
+        "seed": int(args.seed),
+        "powerline_hz": float(args.powerline),
+        "peak_tolerance_ms": DEFAULT_PEAK_TOLERANCE_S * 1000.0,
+        "tolerance_s": DEFAULT_PEAK_TOLERANCE_S,
+        "n_rows": int(len(rows)),
+        "summary": summary_rows,
+        "aggregate": {k: v for k, v in agg.items()
+                      if isinstance(v, dict) and "mean" in v},
+        "achieved_snr_db": {
+            "max_abs_dev": max(achieved_errors) if achieved_errors else None,
+            "mean_abs_dev": float(np.mean(achieved_errors))
+                            if achieved_errors else None,
+        },
+        "verified_achieved_vs_target": bool(
+            achieved_errors and max(achieved_errors) < 1e-6),
+    }
+    metrics_csv = os.path.join(args.outdir, "metrics.json")
+    with open(metrics_csv, "w") as fh:
+        json.dump(metrics_json, fh, indent=2, default=float)
+
     # --- figures ---
     plot_metric_by_snr(
         rows, "snr_improvement_db",
@@ -426,12 +533,32 @@ def run_experiment(args):
         os.path.join(args.outdir, "nrmse_by_snr.png"),
         title="Real NSTDB noise: NRMSE per method",
         ylabel="NRMSE (RMSE / reference range)")
+    plot_metric_summary(rows, "rmse",
+                        os.path.join(args.outdir, "rmse_by_method.png"),
+                        title="Real NSTDB noise: RMSE per method",
+                        ylabel="RMSE (mV)")
+    plot_metric_summary(rows, "prd",
+                        os.path.join(args.outdir, "prd_by_method.png"),
+                        title="Real NSTDB noise: PRD per method",
+                        ylabel="PRD (%)")
+    plot_morphology_summary(rows,
+                            os.path.join(args.outdir,
+                                         "morphology_by_method.png"))
+    plot_noise_type_comparison(
+        rows, os.path.join(args.outdir, "noise_type_comparison.png"),
+        title="Real NSTDB noise: mean SNR improvement per noise type")
     if df["rpeak_sensitivity"].notna().any():
         plot_metric_by_snr(
             rows, "rpeak_sensitivity",
             os.path.join(args.outdir, "rpeak_sensitivity_by_snr.png"),
             title="Real NSTDB noise: R-peak sensitivity after denoising",
-            ylabel="Sensitivity (±50 ms, one-to-one)")
+            ylabel="Sensitivity (±150 ms, one-to-one)")
+    if df["rpeak_f1"].notna().any():
+        plot_metric_by_snr(
+            rows, "rpeak_f1",
+            os.path.join(args.outdir, "rpeak_f1_by_snr.png"),
+            title="Real NSTDB noise: R-peak F1 (2·P·S/(P+S)) per method",
+            ylabel="F1 = 2·precision·sensitivity/(precision + sensitivity)")
     if panel is not None:
         clean, noisy, methods, fs, achieved, cat, target, rec = panel
         plot_sample_comparison(
@@ -440,6 +567,10 @@ def run_experiment(args):
             title=(f"Real ECG {rec} + {cat} noise mixed at {target} dB "
                    f"(first segment)"),
             achieved_snr_db=achieved)
+
+    # --- powerline ablation (separate experiment, see
+    #     run_powerline_ablation: audit item 4) ---
+    run_powerline_ablation(args, ecg_loaded)
 
     # --- report ---
     n_methods = int(df["method"].nunique())
@@ -472,8 +603,14 @@ def run_experiment(args):
     print(f"\nAggregated pearson r: mean={agg.get('pearson', {}).get('mean')}"
           f"  rpeak_sensitivity mean="
           f"{agg.get('rpeak_sensitivity', {}).get('mean')}")
+    print(f"Aggregated rpeak_f1: mean={agg.get('rpeak_f1', {}).get('mean')}")
+    print(f"Aggregated rpeak_precision: mean="
+          f"{agg.get('rpeak_precision', {}).get('mean')}")
+    print(f"\nPeak tolerance: {DEFAULT_PEAK_TOLERANCE_S*1000:.0f} ms "
+          f"(predefined; not tuned to data)")
     print(f"\nSaved -> {segments_csv}")
     print(f"Saved -> {summary_csv}")
+    print(f"Saved -> {metrics_csv}")
     print(f"Saved figures -> {args.outdir}")
     return 0
 

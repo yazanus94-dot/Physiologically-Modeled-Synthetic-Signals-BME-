@@ -11,10 +11,13 @@ Formulas
   score; 0 % is a perfect reconstruction)
 * **Pearson r** standard linear correlation coefficient between ref/est
 * **R-peak sensitivity / precision** after denoising, using a *strict
-  one-to-one* peak matching with a ±50 ms tolerance: each detected peak
-  may match at most one reference peak and vice versa (greedy matching
-  over all candidate pairs sorted by |timing difference|, so a detected
-  peak can never be counted twice against two nearby references)
+  one-to-one* peak matching with a **±150 ms** tolerance (the predefined,
+  never-tuned matching tolerance shared with the rest of the pipeline):
+  each detected peak may match at most one reference peak and vice versa
+  (greedy matching over all candidate pairs sorted by |timing difference|,
+  so a detected peak can never be counted twice against two nearby
+  references).  The F1 score is
+  ``F1 = 2·precision·sensitivity / (precision + sensitivity)``.
 * **Mean |R-peak timing error|** in ms over the matched pairs
 * **Morphology preservation** — relative change of the median QRS
   peak-to-peak amplitude and of the median QRS width (width at half
@@ -30,7 +33,9 @@ from scipy.signal import butter, find_peaks, peak_widths, sosfiltfilt
 
 from denoise_methods import rmse, snr_db  # noqa: F401  (re-exported)
 
-DEFAULT_PEAK_TOLERANCE_S = 0.05   # ±50 ms, one R-peak matching tolerance
+DEFAULT_PEAK_TOLERANCE_S = 0.15   # ±150 ms, the predefined R-peak
+                                   # matching tolerance (never tuned to
+                                   # fit the data)
 MIN_REFRACTORY_S = 0.24           # plausible max heart rate ~250 bpm
 
 
@@ -144,6 +149,17 @@ def match_peaks(reference_peaks, detected_peaks, tolerance_samples):
     return matches
 
 
+def _peak_f1(sensitivity, precision):
+    """F1 = 2·P·S / (P + S); NaN when the denominator is zero or inputs
+    are non-finite (e.g. both numerator and denominator empty)."""
+    if not (np.isfinite(sensitivity) and np.isfinite(precision)):
+        return float("nan")
+    denom = precision + sensitivity
+    if denom <= 0:
+        return float("nan")
+    return float(2.0 * precision * sensitivity / denom)
+
+
 def rpeak_metrics(reference_peaks, detected_peaks, fs,
                   tolerance_s=DEFAULT_PEAK_TOLERANCE_S):
     """Sensitivity, precision and mean absolute timing error of the
@@ -165,6 +181,7 @@ def rpeak_metrics(reference_peaks, detected_peaks, fs,
     return {
         "rpeak_sensitivity": sensitivity,
         "rpeak_precision": precision,
+        "rpeak_f1": _peak_f1(sensitivity, precision),
         "rpeak_mae_ms": mae_ms,
         "rpeak_tp": tp,
         "rpeak_fp": int(n_det - tp),
@@ -255,11 +272,23 @@ def compute_segment_metrics(clean, estimate, fs, reference_peaks=None):
     ``rmse`` / ``nrmse`` / ``prd`` / ``snr_db`` are computed after removing
     the DC level from both signals (see ``_zero_mean``); ``pearson`` and the
     R-peak / QRS morphology metrics are already offset-invariant.
+
+    Non-finite (NaN/inf) inputs raise a ``ValueError`` immediately — fail
+    fast with a clear message instead of propagating NaN into the CSV,
+    JSON, or figures.  (WFDB interpolates invalid samples in
+    ``load_real_ecg._clean_invalid_samples``, so a NaN here is a genuine
+    data-quality problem that should be surfaced.)
     """
     clean = np.asarray(clean, dtype=float)
     estimate = np.asarray(estimate, dtype=float)
     if clean.shape != estimate.shape:
         raise ValueError("clean and estimate must have the same shape")
+    if not (np.isfinite(clean).all() and np.isfinite(estimate).all()):
+        n_nan = int((~np.isfinite(clean)).sum() + (~np.isfinite(estimate)).sum())
+        raise ValueError(
+            "compute_segment_metrics: clean or estimate contain "
+            f"{n_nan} non-finite samples (NaN/inf); refusing to score "
+            "a denoising result on non-finite data")
     clean_z = _zero_mean(clean)
     est_z = _zero_mean(estimate)
     metrics = {

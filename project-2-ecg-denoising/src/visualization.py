@@ -130,6 +130,152 @@ def plot_metric_by_snr(rows, metric, path, title=None, ylabel=None,
     return path
 
 
+def plot_metric_summary(rows, metric, path, title=None, ylabel=None):
+    """Mean of ``metric`` across every row, one bar per method.
+
+    Pools all noise types — a compact "what does each method do on
+    average" figure distinct from the per-SNR ``plot_metric_by_snr``.
+    """
+    methods = []
+    for row in rows:
+        if row["method"] not in methods:
+            methods.append(row["method"])
+    means, errs = [], []
+    for m in methods:
+        vals = [r[metric] for r in rows if r["method"] == m
+                and np.isfinite(r.get(metric, float("nan")))]
+        means.append(float(np.mean(vals)) if vals else np.nan)
+        errs.append(float(np.std(vals, ddof=0)) if vals else np.nan)
+
+    fig, ax = plt.subplots(1, 1, figsize=(7.5, 4.5))
+    x = np.arange(len(methods))
+    ax.bar(x, means, yerr=errs, capsize=3,
+           color=[_method_color(m) for m in methods],
+           tick_label=[m.replace("_", " ") for m in methods])
+    ax.set_title(title or f"Mean {metric} per method")
+    ax.set_ylabel(ylabel or metric)
+    ax.grid(alpha=0.3, axis="y")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
+def plot_noise_type_comparison(rows, path, title=None):
+    """Mean SNR improvement per noise type at two operating points.
+
+    Two subplots: low SNR (−6 dB) and high SNR (+24 dB).  Each subplot
+    shows the mean ``snr_improvement_db`` per noise type (pooled across
+    methods) so the *noise-type* dimension is what is being compared.
+    """
+    def _means(rows_):
+        out = {}
+        for r in rows_:
+            out.setdefault(r["noise_category"], []).append(r["snr_improvement_db"])
+        return {k: float(np.mean(v)) for k, v in sorted(out.items())
+                if np.isfinite(np.mean(v))}
+
+    low = [r for r in rows if r["target_snr_db"] == -6.0]
+    high = [r for r in rows if r["target_snr_db"] == 24.0]
+    low_m = _means(low)
+    high_m = _means(high)
+    cats = sorted(set(low_m) | set(high_m))
+
+    fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=True)
+    for ax, snr, m in ((axes[0], -6.0, low_m), (axes[1], 24.0, high_m)):
+        vals = [m.get(c, np.nan) for c in cats]
+        ax.bar([c.replace("_", " ") for c in cats], vals,
+               color=[_method_color(c) for c in cats] if vals else DEFAULT_COLOR)
+        ax.set_title(f"Mean SNR improvement @ {snr:+.0f} dB")
+        ax.grid(alpha=0.3, axis="y")
+    axes[0].set_ylabel("SNR improvement over raw noisy (dB)")
+    if title:
+        fig.suptitle(title)
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
+def plot_morphology_summary(rows, path, title=None):
+    """Morphology preservation per method.
+
+    Grouped bars of the mean relative change in QRS amplitude and QRS
+    width (0 = perfect preservation) across all rows and noise types.
+    """
+    methods = []
+    for row in rows:
+        if row["method"] not in methods:
+            methods.append(row["method"])
+
+    def _mean(col, m):
+        vals = [r[col] for r in rows if r["method"] == m
+                and np.isfinite(r[col])]
+        return float(np.mean(vals)) if vals else np.nan
+
+    amp = [_mean("qrs_amp_rel_change", m) for m in methods]
+    wid = [_mean("qrs_width_rel_change", m) for m in methods]
+
+    fig, ax = plt.subplots(1, 1, figsize=(9, 4.5))
+    x = np.arange(len(methods))
+    w = 0.38
+    ax.bar(x - w / 2, amp, w, label="QRS amplitude rel. change",
+           color="#1B3A6B", edgecolor="k", alpha=0.8)
+    ax.bar(x + w / 2, wid, w, label="QRS width rel. change",
+           color="#D68910", edgecolor="k", alpha=0.8)
+    ax.set_xticks(x)
+    ax.set_xticklabels([m.replace("_", " ") for m in methods], rotation=25,
+                       ha="right", fontsize=9)
+    ax.set_ylabel("Mean relative change (0 = perfect preservation)")
+    ax.set_title(title or "Morphology preservation per method")
+    ax.legend(loc="upper right", fontsize=9, frameon=False)
+    ax.grid(alpha=0.3, axis="y")
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
+def plot_powerline_ablation(rows, path, title=None):
+    """Mean SNR improvement (dB) per method on the powerline-ablation
+    signal set.
+
+    One subplot per powerline frequency (50 Hz, 60 Hz); each shows the
+    mean ``snr_improvement_db`` per method with error bars.
+    """
+    freqs = sorted({r["freq_hz"] for r in rows})
+    methods = []
+    for row in rows:
+        if row["method"] not in methods:
+            methods.append(row["method"])
+
+    n_cols = max(len(freqs), 1)
+    fig, axes = plt.subplots(1, n_cols, figsize=(4.6 * n_cols, 4.5),
+                             sharey=True, squeeze=False)
+    axes = axes[0]
+    for ax, f in zip(axes, freqs):
+        means, errs = [], []
+        for m in methods:
+            vals = [r.get("snr_improvement_db", r["snr_db"]) for r in rows
+                    if r["freq_hz"] == f and r["method"] == m
+                    and np.isfinite(r.get("snr_improvement_db",
+                                          r["snr_db"]))]
+            means.append(float(np.mean(vals)) if vals else np.nan)
+            errs.append(float(np.std(vals, ddof=0)) if vals else np.nan)
+        ax.bar(np.arange(len(methods)), means, yerr=errs, capsize=3,
+               color=[_method_color(m) for m in methods],
+               tick_label=[m.replace("_", " ") for m in methods])
+        ax.set_title(f"Powerline @ {int(f)} Hz")
+        ax.set_ylabel("SNR improvement over clean ECG (dB)")
+        ax.grid(alpha=0.3, axis="y")
+    if title:
+        fig.suptitle(title)
+    fig.tight_layout()
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    return path
+
+
 def plot_method_bars(rows, metric, snr_level, path, title=None,
                      noise_key="noise_category"):
     """Horizontal bar chart of one metric's mean value per method at a

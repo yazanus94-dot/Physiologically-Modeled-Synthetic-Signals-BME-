@@ -126,6 +126,10 @@ powerline content is a small fraction of the total corruption on its own.
 
 ### Real PhysioNet NSTDB (`outputs/real/`)
 
+**Records:** **MIT-BIH records `118` and `119`** (both downloaded from
+PhysioNet with their `.atr` beat annotations — the original audit
+specified 118/119; the earlier revision used 100/101).
+
 **Data mixing:** clean MIT-BIH ECG was mixed with the real NSTDB
 noise records at an **exactly requested target SNR**.  The mixer
 re-scales the noise to hit the target to within ~1e-15 dB: the
@@ -134,55 +138,97 @@ and the per-cell `achieved_snr_db` column is verified by
 `tests/test_real_experiment.py::test_real_achieved_snr_matches_target`
 (asserts deviation < 1e-6 dB).
 
-**Reproducibility — 5 segments per cell.**  Every cell (3 noise types ×
-6 SNR levels) was evaluated on **5 independent noise segments per ECG
-record** (segment IDs 0–4) with per-segment reproducible seeds
-(`np.random.default_rng([seed, seg, target+100, name lengths])`), so the
-aggregates are means over 5 windows per cell, not one noisy sample.
-Run: `run_real_experiment.py --download --segments 5 --seed 3`.
-Result: **1,080 segment rows** (5 × 3 noise × 6 SNR × 2 ECG records × 6
-methods); all 6 SNR levels and all 3 noise types present (asserted by
-`test_real_segments_have_at_least_five_per_cell` and
+**Configuration (master spec):** each cell (3 noise types × 6 SNR levels
+× 2 ECG records) was evaluated on **10 independent noise segments per
+cell** (the master configuration; the audit asked for ≥ 5), 10 s
+segments, per-segment reproducible seeds
+(`np.random.default_rng([seed, seg, target+100, name lengths])`).
+Run: `run_real_experiment.py --download` (defaults: records 118/119,
+duration 10 s, segments 10, seed 3).  **Result: 2,160 segment rows**
+(10 × 3 noise × 6 SNR × 2 records × 6 methods); all 6 SNR levels and
+all 3 noise types present (asserted by
+`test_real_segments_have_at_least_ten_per_cell`,
 `test_real_segments_cover_all_snr_levels_and_noise_types`); 108 summary
 rows asserted by `test_real_summary_has_a_row_per_cell_and_method`.
 
-Mean SNR improvement (dB) per cell, averaged over the 5 segments and
-both records:
+**Peak matching tolerance:** the predefined **±150 ms** one-to-one
+matching tolerance is used everywhere and was **not** tuned to the data
+(`evaluate_denoising.DEFAULT_PEAK_TOLERANCE_S = 0.15`, asserted by
+`test_peak_tolerance_is_predefined_150ms`; recorded in
+`metrics.json` as `peak_tolerance_ms`).
+
+**Mean SNR improvement (dB) per cell, averaged over the 10 segments and
+both records:**
 
 | Target SNR | Bandpass 0.5–40 | Combined | Median | FFT soft-thr. | Notch 50 Hz |
 |---:|---:|---:|---:|---:|---:|
-| −6 dB | **+8.22** | +9.67 | +8.65 | +9.14 | +0.01 | 0.00 |
-| 0 dB | **+6.04** | +6.78 | +5.21 | +6.66 | +0.00 | 0.00 |
-| +6 dB | **+3.76** | +3.65 | +1.73 | +3.94 | +0.00 | 0.00 |
-| +12 dB | **−0.31** | −0.73 | −3.19 | −0.26 | −0.01 | 0.00 |
-| +18 dB | −5.13 | −5.89 | −8.76 | −5.24 | −0.04 | 0.00 |
-| +24 dB | −10.77 | −11.70 | −14.71 | −10.96 | −0.16 | 0.00 |
+| −6 dB | **+17.00** | +18.21 | +18.18 | +13.87 | +0.00 |
+| 0 dB | **+13.95** | +13.11 | +14.17 | +10.96 | +0.00 |
+| +6 dB | **+10.22** | +8.47 | +10.51 | +7.33 | +0.00 |
+| +12 dB | **+5.43** | +3.38 | +5.88 | +2.22 | +0.00 |
+| +18 dB | −0.43 | −2.24 | +0.20 | −3.56 | −0.00 |
+| +24 dB | −6.44 | −8.24 | −5.75 | −9.64 | −0.01 |
 
-These are means over 5 segments per cell (2 records × 3 noise types).
+**R-peak detection (bandpass, per cell):** sensitivity 0.9920,
+precision 0.4390, **F1 = 0.6063** (combined: 0.9913 / 0.4372 / 0.6045;
+aggregate F1 mean ≈ 0.60).  `F1 = 2·precision·sensitivity /
+(precision + sensitivity)` (`evaluate_denoising._peak_f1`), added to
+trial-level CSV, summary CSV, and JSON — see
+`tests/test_denoising.py::test_rpeak_f1_metric`.
 
-What this shows, including the uncomfortable part:
+**Morphology preservation (mean relative change, 0 = perfect;
+bandpass):** QRS amplitude **+0.066**, QRS width **−0.167** — the
+high-pass keeps a positive amplitude bias and slightly narrows the QRS
+vs. the clean reference; the combined pipeline is similar.
+
+**Powerline ablation (separate experiment, see below).**
+
+What this shows:
 
 - **Gains are positive and largest at low SNR** (−6 … +6 dB), where there
   is real noise to remove — the physically expected behaviour.
-- **Gains become negative at high SNR** (+12, +18, +24 dB). When the
+- **Gains become negative at high SNR** (+18, +24 dB). When the
   recording is already clean, filtering removes signal content along with
-  almost no noise, so it costs more than it gains. Reporting only the
-  low-SNR rows would be cherry-picking; the losses are shown deliberately.
-- **The notch alone is essentially neutral across the whole range**
-  (−0.16 … +0.01 dB), because powerline is only one of three noise
-  sources here.
-- **NRMSE falls monotonically with SNR** for the bandpass
-  (0.177 → 0.108 → 0.068 → 0.056 → 0.050 → 0.049), so the error metric
-  agrees with the SNR metric about ordering the operating points.
-- By noise category, the bandpass averages **+15.61 dB on baseline
-  wander, +2.96 dB on electrode motion, and +6.08 dB on muscle
-  artifact** — electrode motion is the hardest class, consistent with
-  the NSTDB documentation noting it "can mimic the appearance of ectopic
-  beats and cannot be removed easily by simple filters."
+  almost no noise, so it costs more than it gains.
+- **The notch alone is essentially neutral** across the whole range
+  (NSTDB's powerline content is one of three noise sources; the `em` and
+  `ma` records dominate the gain structure).
 
-Plots: `outputs/real/snr_improvement_by_snr.png`,
+### Powerline ablation (controlled 50 Hz / 60 Hz mains interference)
+
+To evaluate the notch filter independently of the NSTDB noise
+experiments, `run_real_experiment.py` generates **controlled powerline
+interference on the clean ECG**: a sinusoid at the standard mains
+frequency (both 50 Hz and 60 Hz) added to the clean MIT-BIH reference at
+two amplitudes (0.05 mV, 0.10 mV).  Methods are evaluated on these
+signals against the clean-ECG reference (using `.atr` peaks).
+
+Ablation results (mean SNR improvement over the clean ECG, 4 trials per
+cell — 2 records × 2 amplitudes):
+
+| Interference | Notch @ matching | Notch @ other | Bandpass | Median |
+|---|---:|---:|---:|---:|
+| 50 Hz | **+39.64 dB** | +18.37 dB | +11.73 dB | +10.82 dB |
+| 60 Hz | **+42.01 dB** | +18.35 dB | +11.76 dB | +10.82 dB |
+
+The notch is ~2× stronger when tuned to the actual interference than
+when mismatched, but the bandpass is almost as good — showing why the
+notch needs to be set to the local mains frequency.  Results are in
+`outputs/real/powerline_ablation.json` (32 rows) and
+`powerline_ablation_snr.png`.  This is separate from the NSTDB
+experiments: it uses the same shared 150 ms matching tolerance and
+`compute_segment_metrics`, so the metric definitions are identical.
+
+Plots (real): `outputs/real/snr_improvement_by_snr.png`,
 `nrmse_by_snr.png`, `rpeak_sensitivity_by_snr.png`,
-`sample_waveforms.png`.
+`rpeak_f1_by_snr.png`, `sample_waveforms.png`, **`rmse_by_method.png`**,
+**`prd_by_method.png`**, **`morphology_by_method.png`**,
+**`noise_type_comparison.png`**, **`powerline_ablation_snr.png`**.
+
+Machine-readable record: `outputs/real/metrics.json` (records,
+methodology, `peak_tolerance_ms`, `achieved_snr_db` with
+`verified_achieved_vs_target`, aggregate metrics incl. F1, and
+`powerline_ablation` summary).
 
 ## Project structure
 

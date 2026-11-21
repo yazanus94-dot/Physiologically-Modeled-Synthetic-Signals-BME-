@@ -67,8 +67,9 @@ Each project folder is self-contained:
 | 1 | MIT-BIH (44 records) | R-peak detection (±50 ms, one-to-one) | sens 0.9434 / prec 0.9560 / F1 0.9497, mean timing error 3.79 ms |
 | 1 | MIT-BIH, classic DS1/DS2 | beat classification (Logistic Regression) | balanced acc. 0.7063, macro-F1 0.5581 |
 | 1 | MIT-BIH, leakage-audited | beat classification (Logistic Regression) | balanced acc. 0.7081, macro-F1 0.5689 |
-| 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at −6 dB | **+8.22 dB** (combined pipeline +9.67 dB) |
-| 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at +24 dB | **−10.77 dB** (filtering an already-clean signal costs more than it gains) |
+| 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at −6 dB | **+17.00 dB** (combined +18.21 dB) — records **118, 119** |
+| 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at +24 dB | **−6.44 dB** (already-clean cost) |
+| 2 | NSTDB R-peak (bandpass, predefined ±150 ms) | F1 | **0.606** (sens 0.9920 / prec 0.4390) |
 | 3 | BIDMC (3 records) | mean HR difference, HRV vs PRV | **−0.45 %**, beat agreement 97.4 % |
 | 3 | BIDMC (3 records) | SDNN / RMSSD / LF-HF difference | 69.94 % / 81.59 % / 506.56 % (reported as a finding, not smoothed away) |
 
@@ -100,15 +101,16 @@ cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protoc
 cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode rpeaks                            && cd ../..
 #   (optional) record-grouped hyperparameter tuning, on demand:
 cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protocol classic --cv     && cd ../..
-cd project-2-ecg-denoising/src  && python run_real_experiment.py --download --segments 5 --seed 3  && cd ../..
+cd project-2-ecg-denoising/src  && python run_real_experiment.py --download                        && cd ../..
 cd project-3-ppg-hrv/src        && python run_bidmc_experiment.py --download                       && cd ../..
 
-# tests (200 total: 140 + 28 + 32)
+# tests (211 total: 140 + 39 + 32)
 pytest project-1-ecg-arrhythmia/tests project-2-ecg-denoising/tests project-3-ppg-hrv/tests
 ```
 
-Note: `--segments 5` is the default real-run configuration for Project 2
-(5 independent noise segments per noise-type × SNR cell).  Record-grouped
+Note: `--segments 10` is the default real-run configuration for Project 2
+(10 independent noise segments per noise-type × SNR cell, 10 s segments,
+records 118/119).  Record-grouped
 cross-validation in Project 1 is available via `--cv`; it is off by
 default because beat-level shuffled CV is deliberately unavailable.
 
