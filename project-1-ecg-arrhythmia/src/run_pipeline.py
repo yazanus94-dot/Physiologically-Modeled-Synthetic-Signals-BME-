@@ -9,39 +9,50 @@ Run synthetic:    cd src && python run_pipeline.py --mode synthetic
 Run real data:    cd src && python run_pipeline.py --mode mitbih --protocol classic
 Run real data:    cd src && python run_pipeline.py --mode mitbih --protocol leakage_audited
 """
-import os
-import json
 import argparse
+import json
+import os
+import sys
 import warnings
 from pathlib import Path
 
-import numpy as np
 import joblib
-
 import matplotlib
+import numpy as np
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-from generate_signal import generate_ecg
+from aami import (
+    count_beats_per_class,
+    filter_aami_beats,
+    map_to_aami_class,
+    segment_beats_annotation_centered,
+)
 from detect_rpeaks import (
-    detect_rpeaks, detect_rpeaks_mitbih, score_detector, score_detector_detailed,
+    detect_rpeaks,
+    detect_rpeaks_mitbih,
     match_peaks_one_to_one,
+    score_detector,
+    score_detector_detailed,
+)
+from evaluation import (
+    collect_beats_from_records,
+    get_classic_split,
+    get_leakage_audited_split,
+    verify_no_leakage,
 )
 from features import extract_features, extract_features_from_beats
+from generate_signal import generate_ecg
 from load_mitbih import MITBIHLoader
-from aami import (
-    map_to_aami_class, filter_aami_beats,
-    segment_beats_annotation_centered, count_beats_per_class
-)
-from preprocessing import preprocess_ecg, PreprocessingConfig
-from evaluation import (
-    get_classic_split, get_leakage_audited_split,
-    collect_beats_from_records, verify_no_leakage
-)
+from preprocessing import PreprocessingConfig, preprocess_ecg
 from train_model import (
-    ModelConfig, train_model, evaluate_model,
-    evaluate_per_record, get_feature_importance, save_model
+    ModelConfig,
+    evaluate_model,
+    evaluate_per_record,
+    get_feature_importance,
+    save_model,
+    train_model,
 )
 
 HERE = Path(__file__).resolve().parent
@@ -50,6 +61,33 @@ SYNTHETIC_OUT = OUT_DIR / "synthetic"
 MITBIH_OUT = OUT_DIR / "mitbih"
 
 AAMI_CLASSES = ["N", "S", "V", "F"]
+
+# Repo root, for the shared ``versions.py`` provenance recorder.
+REPO_ROOT = HERE.parent.parent
+
+RANDOM_SEED_NOTE = ("Deterministic: fixed records, RF/LR random_state=42; "
+                    "no unseeded RNG.")
+
+
+def _stamp_provenance(results, seed=42):
+    """Record environment + seed provenance on an experiment result dict.
+
+    The committed ``outputs/mitbih/*/metrics.json`` and
+    ``rpeak_detection.json`` carry ``versions`` / ``seed`` /
+    ``random_seed_note``; stamping them here means a fresh run
+    reproduces those files instead of silently dropping them (audit:
+    committed outputs must be reproducible from the code).
+    """
+    try:
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        from versions import get_versions
+        results["versions"] = get_versions()
+    except Exception:  # noqa: BLE001, S110 - provenance is best-effort
+        pass
+    results["seed"] = seed
+    results["random_seed_note"] = RANDOM_SEED_NOTE
+    return results
 
 
 def run_synthetic_experiment(seed: int = 42, duration_s: float = 600.0):
@@ -415,6 +453,7 @@ def _save_mitbih_results(
             "feature_importances": get_feature_importance(lr_model, feat_names)
         }
     }
+    _stamp_provenance(results)
 
     # Save models
     save_model(rf_model, MITBIH_OUT / protocol / "rf_model.joblib", {"protocol": protocol, "model_type": "random_forest"})
@@ -516,7 +555,7 @@ def run_rpeak_evaluation_on_mitbih(loader, records, protocol_name):
         r_peaks_aami, _, _ = filter_aami_beats(r_peaks_true, labels)
 
         # Preprocess
-        from preprocessing import preprocess_ecg, PreprocessingConfig
+        from preprocessing import PreprocessingConfig, preprocess_ecg
         config = PreprocessingConfig(lowcut_hz=0.5, highcut_hz=40.0, filter_order=4)
         signal_proc, _ = preprocess_ecg(signal, fs, config)
 
@@ -622,6 +661,7 @@ def run_rpeak_detection_experiment(protocol: str = "classic"):
             {k: v for k, v in s.items() if k != "matched_pairs"} for s in scores
         ],
     }
+    _stamp_provenance(results)
 
     out_dir = MITBIH_OUT / protocol
     out_dir.mkdir(parents=True, exist_ok=True)

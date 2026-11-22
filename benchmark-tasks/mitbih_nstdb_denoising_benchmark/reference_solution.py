@@ -74,39 +74,53 @@ def notch_filter(x, fs, freq=50.0, quality=30.0):
 
 
 def median_filter_baseline_removal(x, fs, window_s=0.6):
-    """Subtract the median baseline computed with a 0.6 s sliding median."""
+    """Subtract the median baseline computed with a 0.6 s sliding median.
+
+    ``scipy.signal.medfilt`` needs an odd kernel that fits the input, so
+    on segments shorter than the requested window the largest odd length
+    that fits is used (this avoids scipy's "kernel_size exceeds volume
+    extent" zero-padding warning on the evaluator's short-segment probe).
+    """
     x = np.asarray(x, dtype=float)
     orig_n = x.size
-    x = _pad_to_min(x)
+    x = _pad_to_min(x)          # guarantees >= MIN_SEGMENT_SAMPLES (64)
     window = max(3, round(window_s * fs) | 1)
     if window > x.size:
-        window = max(x.size, 3)
-    if window % 2 == 0:
-        window += 1
+        window = x.size if x.size % 2 == 1 else x.size - 1
     baseline = medfilt(x, kernel_size=window)
     return (x - baseline)[:orig_n]
 
 
 def fft_soft_threshold(x, fs, keep_band=(0.5, 40.0), threshold_fraction=0.08):
-    """FFT-domain soft-threshold denoiser (repo's fft_soft_threshold_denoise)."""
+    """FFT-domain soft-threshold denoiser (repo's ``fft_soft_threshold_denoise``).
+
+    Out-of-band bins are zeroed, then every in-band bin's **magnitude** is
+    soft-thresholded at ``threshold_fraction * max|magnitude|`` while its
+    **phase is preserved** — the frequency-domain analogue of wavelet
+    soft-thresholding.
+
+    Audit fix: this helper used to compare an *amplitude* against a
+    *total band power* (units mismatch, threshold ≫ every bin) and to
+    subtract a real scalar from complex coefficients, which zeroed the
+    whole spectrum and returned silence.  It now matches
+    ``project-2-ecg-denoising/src/denoise_methods.py`` exactly and is
+    covered by ``test_fft_soft_threshold_preserves_signal``.
+    """
     x = np.asarray(x, dtype=float)
     low, high = keep_band
     n = x.size
     spectrum = np.fft.rfft(x)
     freqs = np.fft.rfftfreq(n, d=1 / fs)
-    out_of_band = (freqs < low) | (freqs > high)
-    spectrum[out_of_band] = 0.0
-
-    # band power threshold (fraction of total FFT power)
-    band_power = np.sum(np.abs(spectrum[(freqs >= low) & (freqs <= high)]) ** 2)
-    np.sum(np.abs(spectrum) ** 2)
-    threshold = threshold_fraction * band_power
     in_band = (freqs >= low) & (freqs <= high)
-    spectrum[in_band] = np.where(
-        np.abs(spectrum[in_band]) > threshold,
-        spectrum[in_band] - threshold, 0.0)
-    spectrum[out_of_band] = 0.0
-    return np.fft.irfft(spectrum, n)
+    spectrum[~in_band] = 0.0
+
+    mag = np.abs(spectrum)
+    if mag.max() == 0:
+        return np.fft.irfft(spectrum, n)
+    thresh = threshold_fraction * mag.max()
+    magnitude_reduced = np.maximum(mag - thresh, 0.0)
+    phase = np.angle(spectrum)
+    return np.fft.irfft(magnitude_reduced * np.exp(1j * phase), n)
 
 
 def combined_pipeline(x, fs, powerline_hz=50.0):
@@ -127,18 +141,26 @@ class DenoisingResult:
 
 
 def denoise(noisy, fs):
-    """The reference pipeline: median baseline removal → notch → bandpass.
+    """The reference pipeline: median baseline removal → 50 Hz notch →
+    0.5–40 Hz band-pass (``combined_pipeline``).
 
-    Chosen because, on real NSTDB data, the combined chain is the best
-    single step after the raw bandpass in the reference repository's real
-    experiment (`project-2-ecg-denoising`, measured +17.19 dB median,
-    +18.21 dB combined, +13.87 dB FFT at −6 dB).  Median removal handles
-    the dominant baseline-wander class, the 50 Hz notch handles the
-    electrostatic mains, and the bandpass finalises the 0.5–40 Hz shape.
+    Why this chain, measured on the fixed evaluation protocol
+    (``evaluator.evaluate(..., segments=10)`` on real MIT-BIH 118/119 +
+    NSTDB ``bw``/``ma``/``em``):
+
+    * **Median baseline removal (0.6 s)** attacks the baseline-wander
+      class directly; a linear high-pass would also remove it but spreads
+      QRS energy and rings on the steepest NSTDB wander.
+    * **50 Hz IIR notch** removes the mains component that sits just
+      above the pass-band, where a 3rd-order band-pass still passes a
+      measurable amount of it.
+    * **0.5–40 Hz Butterworth band-pass** finalises the ECG band.
+
+    Result: mean SNR improvement **+3.16 dB** vs **+2.65 dB** for the
+    band-pass-only starter, and a strictly higher score at every target
+    SNR from −6 dB to +24 dB (see ``expected_results.json``).
     """
-    step1 = median_filter_baseline_removal(noisy, fs)
-    step2 = notch_filter(step1, fs, freq=50.0)
-    return bandpass_filter(step2, fs)
+    return combined_pipeline(noisy, fs, powerline_hz=50.0)
 
 
 METHOD_NAME = "median+notch+bandpass_0.5_40hz"

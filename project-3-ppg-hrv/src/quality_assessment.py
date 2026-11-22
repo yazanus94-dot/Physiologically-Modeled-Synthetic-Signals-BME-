@@ -32,8 +32,14 @@ import csv
 import os
 
 import numpy as np
-
+from peak_detect import MAX_PULSE_RATE_BPM, MIN_PULSE_RATE_BPM
 from ppg_preprocessing import assess_signal_quality
+
+#: Central 40–200 bpm pulse-rate configuration (``peak_detect``), re-used
+#: here so the detector's plausibility window and the interval-quality
+#: hard limits cannot drift apart (audit Phase 4.2).
+DEFAULT_MIN_HR_BPM = MIN_PULSE_RATE_BPM
+DEFAULT_MAX_HR_BPM = MAX_PULSE_RATE_BPM
 
 
 def motion_stats(filtered_ppg, fs, window_s=2.0, k=3.0):
@@ -133,7 +139,8 @@ def beat_morphology_stats(filtered_ppg, fs, peaks,
             "min_corr": min_corr}
 
 
-def interval_suspects(intervals_s, t_mid, min_hr_bpm=40, max_hr_bpm=200,
+def interval_suspects(intervals_s, t_mid, min_hr_bpm=DEFAULT_MIN_HR_BPM,
+                      max_hr_bpm=DEFAULT_MAX_HR_BPM,
                       norm_ratio_short=0.6, norm_ratio_long=1.5):
     """Flag physiologically implausible / locally atypical pulse intervals.
 
@@ -174,7 +181,8 @@ def interval_suspects(intervals_s, t_mid, min_hr_bpm=40, max_hr_bpm=200,
 
 def compare_intervals(t_ppg, pi_s, t_ecg, rr_s, lag=None,
                       abs_tol_s=0.10, rel_tol=0.10,
-                      min_hr_bpm=40, max_hr_bpm=200):
+                      min_hr_bpm=DEFAULT_MIN_HR_BPM,
+                      max_hr_bpm=DEFAULT_MAX_HR_BPM):
     """ECG-vs-PPG interval disagreement (lag-corrected for PTT).
 
     The ECG RR series is interpolated at each PPG interval mid-time,
@@ -252,8 +260,9 @@ def compare_intervals(t_ppg, pi_s, t_ecg, rr_s, lag=None,
 
 
 def assess_record(record_name, raw_ppg, filtered_ppg, fs, peaks,
-                  ecg_peaks=None, quality_raw=None, min_hr_bpm=40,
-                  max_hr_bpm=200):
+                  ecg_peaks=None, quality_raw=None,
+                  min_hr_bpm=DEFAULT_MIN_HR_BPM,
+                  max_hr_bpm=DEFAULT_MAX_HR_BPM):
     """Full per-record quality assessment (returns a JSON-safe dict).
 
     Parameters

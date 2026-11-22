@@ -4,6 +4,11 @@
     "118",
     "119"
   ],
+  "noise_records": [
+    "bw",
+    "ma",
+    "em"
+  ],
   "n_cells": 360,
   "snrs": [
     -6.0,
@@ -14,9 +19,57 @@
     24.0
   ],
   "segments_per_cell": 10,
+  "segment_duration_s": 10.0,
   "seed": 3,
   "peak_tolerance_ms": 150.0,
+  "data_dir": null,
   "overall_score": 0.812,
+  "structure_ok": true,
+  "reproducibility_digest": "a3ffe2451ff5c598d8744a507fe5af88c226f4043e7c11c93366670b5b2c18d8",
+  "provenance": {
+    "protocol": "fixed independent evaluation (no train/val/test split)",
+    "ecg_records": [
+      "118",
+      "119"
+    ],
+    "noise_records": [
+      "bw",
+      "ma",
+      "em"
+    ],
+    "noise_categories": [
+      "baseline_wander",
+      "muscle_artifact",
+      "electrode_motion"
+    ],
+    "target_snr_db": [
+      -6.0,
+      0.0,
+      6.0,
+      12.0,
+      18.0,
+      24.0
+    ],
+    "segments_per_cell": 10,
+    "segment_duration_s": 10.0,
+    "n_cells": 360,
+    "seed": 3,
+    "peak_tolerance_ms": 150.0,
+    "data_dir": null,
+    "mode": "real",
+    "software": {
+      "python": "3.14.7",
+      "python_implementation": "CPython",
+      "platform": "Windows-11-10.0.26300-SP0",
+      "numpy": "2.5.4",
+      "scipy": "1.18.1",
+      "pandas": "2.3.3",
+      "wfdb": "4.3.1",
+      "matplotlib": "3.11.2",
+      "scikit_learn": "1.9.1",
+      "joblib": "1.6.0"
+    }
+  },
   "sub_scores": {
     "structure": 1.0,
     "numerical_validity": 1.0,
@@ -35,6 +88,8 @@
     "mean_rpeak_precision": 0.4397,
     "mean_rpeak_f1": 0.6073,
     "n_cells": 360,
+    "n_scored_cells": 360,
+    "n_well_defined_cells": 360,
     "improvements_db": [
       15.953,
       16.332,

@@ -34,24 +34,63 @@ def test_reference_matches_expected_results(expected):
     """Regenerating the reference solution reproduces the committed
     expected results (determinism + reference commit).
 
-    When the real PhysioNet data is unavailable the evaluator falls back
-    to synthetic — the test then skips (the committed expected results
-    were generated on real data).
+    The protocol fields are asserted in **both** modes, so CI (which has
+    no PhysioNet data and therefore runs the synthetic fallback) still
+    catches any drift between TASK.md, the evaluator and the committed
+    JSON.  The score itself is only comparable in the mode the JSON was
+    generated in — the JSON is real-data, so the score assertion skips
+    offline.
     """
     res = evaluate(reference_solution(), segments=expected["segments_per_cell"])
+    assert res["segments_per_cell"] == expected["segments_per_cell"] == 10
+    assert res["segment_duration_s"] == expected["segment_duration_s"] == 10.0
+    assert res["seed"] == expected["seed"] == 3
+    assert res["peak_tolerance_ms"] == expected["peak_tolerance_ms"] == 150.0
+    assert res["records"] == expected["records"] == ["118", "119"]
+    assert res["snrs"] == expected["snrs"]
+    assert res["provenance"]["noise_records"] == ["bw", "ma", "em"]
+    assert res["n_cells"] > 0
     if res["mode"] != expected["mode"]:
         pytest.skip(f"mode mismatch: got {res['mode']}, expected "
                     f"{expected['mode']} (offline synthetic fallback)")
     assert res["overall_score"] == pytest.approx(
         expected["overall_score"], abs=0.05), res["overall_score"]
-    assert res["n_cells"] > 0
 
 
 def test_reference_scores_higher_than_starter():
-    """The reference solution beats the naive starter baseline."""
+    """The reference solution beats the naive starter baseline by a
+    measured margin (audit 2.1).
+
+    Measured on the fixed protocol with real PhysioNet data
+    (``expected_results.json``): reference 0.8120 vs starter 0.6443, a
+    gap of **+0.1677**.  Offline synthetic fallback: reference 0.8138 vs
+    starter 0.6562, a gap of **+0.1576**.  The asserted margin (+0.05)
+    is well inside both measured gaps, so the comparison is strict
+    (``>``) rather than the previous non-committal ``>=``.
+    """
     ref = evaluate(reference_solution(), segments=2)
     start = evaluate(starter_solution(), segments=2)
-    assert ref["overall_score"] >= start["overall_score"]
+    gap = ref["overall_score"] - start["overall_score"]
+    assert gap > 0.05, (f"reference only beats starter by {gap:.4f} "
+                        f"({ref['overall_score']} vs "
+                        f"{start['overall_score']})")
+
+
+def test_reference_beats_starter_on_snr_improvement():
+    """The reference denoises better, not just scores better (audit 2.1).
+
+    Mean SNR improvement over the raw noisy input, measured on the fixed
+    protocol: reference **+3.16 dB** vs starter **+2.65 dB** with real
+    data, **+1.27 dB** vs **+1.02 dB** on the synthetic fallback.  The
+    asserted margin (+0.10 dB) holds in both modes and is a property of
+    the denoiser, not of the rubric weights.
+    """
+    ref = evaluate(reference_solution(), segments=2)
+    start = evaluate(starter_solution(), segments=2)
+    ref_imp = ref["performance_metrics"]["mean_snr_improvement_db"]
+    start_imp = start["performance_metrics"]["mean_snr_improvement_db"]
+    assert ref_imp - start_imp > 0.10, (f"reference {ref_imp} dB vs "
+                                        f"starter {start_imp} dB")
 
 
 def test_evaluator_structure_and_validity():
@@ -100,6 +139,39 @@ def test_reference_deterministic():
     r2 = evaluate(reference_solution(), segments=2)
     assert r1["overall_score"] == r2["overall_score"]
     assert r1["reproducibility_ok"] is True
+
+
+def test_reproducibility_digest_is_exposed_and_stable():
+    """TASK.md section A promises a reproducibility digest of the output
+    array — it must exist, be a stable hex string, and match across runs
+    (audit: the evaluator computed digests internally but never returned
+    one)."""
+    r1 = evaluate(reference_solution(), segments=1)
+    r2 = evaluate(reference_solution(), segments=1)
+    d = r1["reproducibility_digest"]
+    assert isinstance(d, str) and len(d) >= 16, d
+    assert all(c in "0123456789abcdef" for c in d), d
+    assert d == r2["reproducibility_digest"]
+    assert r1["reproducibility_ok"] is True
+
+
+class _BareArray:
+    """Returns a bare ndarray instead of an object with ``.signal``."""
+
+    def denoise(self, noisy, fs):
+        return np.asarray(noisy, dtype=float) * 0.9
+
+
+def test_bare_ndarray_solution_does_not_crash():
+    """A solution returning a plain array must be scored, not raise.
+
+    Regression: the reproducibility block called ``res.signal``
+    unconditionally, so a bare-ndarray solution crashed with
+    ``AttributeError`` instead of being scored."""
+    res = evaluate(_BareArray(), segments=1)
+    assert np.isfinite(res["overall_score"])
+    assert res["reproducibility_ok"] is True
+    assert res["reproducibility_digest"]
 
 
 def test_synthetic_fallback_mode_runs_offline():
@@ -224,6 +296,34 @@ def test_evaluate_output_has_diagnostic_f1():
     assert "mean_rpeak_f1" in res["performance_metrics"]
 
 
+def test_fft_soft_threshold_preserves_signal():
+    """The documented ``fft_soft_threshold`` helper denoises instead of
+    returning silence (audit 2.3).
+
+    Regression: the helper compared an amplitude against a *total band
+    power* threshold and subtracted a real scalar from complex bins, so
+    every coefficient was zeroed and ``fft_soft_threshold(noisy)`` came
+    back all-zero — which the evaluator now rejects as a flat output.
+    """
+    from reference_solution import fft_soft_threshold
+    rng = np.random.default_rng(0)
+    t = np.arange(2500) / 250.0
+    clean = np.sin(2 * np.pi * 5.0 * t)
+    noisy = clean + 0.5 * rng.standard_normal(t.size)
+
+    out = fft_soft_threshold(noisy, 250.0)
+    assert out.shape == noisy.shape
+    assert np.all(np.isfinite(out))
+    # Not silence: retains most of the in-band signal energy.
+    assert np.ptp(out) > 0.5 * np.ptp(clean)
+    # And it actually helps: closer to the clean signal than the input.
+    assert np.linalg.norm(out - clean) < np.linalg.norm(noisy - clean)
+
+    # Zero input -> zero output (no NaNs, no crash).
+    z = fft_soft_threshold(np.zeros(500), 250.0)
+    assert z.shape == (500,) and np.all(np.isfinite(z))
+
+
 def test_reference_on_short_and_zero_segments():
     """Reference solution on short segment + zero input: finite output,
     correct shape."""
@@ -232,3 +332,204 @@ def test_reference_on_short_and_zero_segments():
                                   250.0).signal).shape == (64,)
     z = sol.denoise(np.zeros(500, dtype=float), 250.0).signal
     assert np.all(np.isfinite(z))
+
+
+# ---------------------------------------------------------------------------
+# 2.3.8 — malformed outputs must not bank a high score
+# ---------------------------------------------------------------------------
+
+class _Constant:
+    def denoise(self, noisy, fs):
+        class R:
+            signal = np.full(len(noisy), 0.5)
+            method = "constant"
+        return R()
+
+
+class _WrongShape:
+    def denoise(self, noisy, fs):
+        class R:
+            signal = np.asarray(noisy)[:-5]
+            method = "short"
+        return R()
+
+
+class _NaNOut:
+    def denoise(self, noisy, fs):
+        class R:
+            signal = np.full(len(noisy), np.nan)
+            method = "nan"
+        return R()
+
+
+class _NearConstant:
+    """Finite, correct shape, technically non-flat — still no signal."""
+
+    def denoise(self, noisy, fs):
+        a = np.asarray(noisy, dtype=float)
+        class R:
+            signal = np.full(len(a), 1.0) + np.linspace(0, 1e-15, len(a))
+            method = "near_constant"
+        return R()
+
+
+@pytest.mark.parametrize("sol,label", [
+    (_Constant(), "constant"),
+    (_WrongShape(), "wrong_shape"),
+    (_NaNOut(), "nan"),
+])
+def test_malformed_outputs_get_no_performance_or_sp_credit(sol, label):
+    """Audit 2.3.8: a malformed output loses *performance* and
+    *signal-processing* credit too, not only structure — and the overall
+    score stays finite (it used to become ``NaN`` because a flat output
+    has zero power at the probe frequency and a degenerate SNR).
+
+    Regression: constant output previously returned
+    ``overall_score = NaN`` with ``signal_processing = 1.0``
+    (infinite apparent attenuation) and wrong-shape output scored
+    ``performance = 0.24`` by tiling the array with ``np.resize``.
+    """
+    res = evaluate(sol, segments=2)
+    assert np.isfinite(res["overall_score"]), res
+    assert res["sub_scores"]["structure"] == 0.0, res
+    assert res["sub_scores"]["performance"] == 0.0, res
+    assert res["sub_scores"]["signal_processing"] == 0.0, res
+    assert res["overall_score"] <= 0.5, res
+
+
+def test_near_constant_output_is_rejected():
+    """A 'barely non-flat' output fails the structure check (2.3.1/2.3.8)."""
+    from evaluator import _score_structure
+    n = 2500
+    inp = np.sin(np.linspace(0, 50, n))          # ptp = 2.0
+    flat = np.full(n, 1.0) + np.linspace(0, 1e-15, n)
+    assert not _score_structure(flat, n, expected_ptp=float(np.ptp(inp)))
+    assert _score_structure(np.sin(np.linspace(0, 50, n)), n,
+                            expected_ptp=float(np.ptp(inp)))
+
+
+def test_score_structure_signature_stays_backwards_compatible():
+    """``_score_structure(out, n)`` (no ptp) keeps working for callers."""
+    from evaluator import _score_structure
+    n = 100
+    assert _score_structure(np.linspace(0, 1, n), n)
+    assert not _score_structure(np.zeros(n), n)
+
+
+def test_near_constant_solution_scores_low():
+    """End-to-end: a barely-non-flat output is rejected and cannot bank
+    performance or signal-processing credit (audit 2.3.8)."""
+    res = evaluate(_NearConstant(), segments=1)
+    assert res["sub_scores"]["structure"] == 0.0, res
+    assert res["sub_scores"]["performance"] == 0.0, res
+    assert res["sub_scores"]["signal_processing"] == 0.0, res
+    assert np.isfinite(res["overall_score"])
+    assert res["overall_score"] <= 0.5, res
+
+
+def test_overall_score_is_always_finite():
+    """No solution shape may produce a NaN/Inf overall score."""
+    for sol in (_Constant(), _WrongShape(), _NaNOut(),
+                reference_solution(), starter_solution()):
+        res = evaluate(sol, segments=2)
+        assert np.isfinite(res["overall_score"]), (sol, res)
+        for k, v in res["sub_scores"].items():
+            assert np.isfinite(v), (k, v)
+
+
+# ---------------------------------------------------------------------------
+# 2.3.5 — data_dir really controls loading
+# ---------------------------------------------------------------------------
+
+def test_data_dir_used_when_default_directory_is_empty(monkeypatch):
+    """Audit 2.3.5: the caller's ``data_dir`` is passed on the *first*
+    load, not only when the default directory already holds data.
+
+    Regression: the old code loaded the default directory first and
+    re-loaded with ``override_dir`` only if that first load succeeded,
+    so a non-default ``data_dir`` was silently ignored on a fresh
+    checkout (which then fell back to synthetic data).
+    """
+    import evaluator as ev
+    calls = []
+
+    def fake_loader(records, snrs, segments, seed=None, override_dir=None):
+        calls.append(override_dir)
+        if override_dir is None:
+            return None, {}          # default directory is empty
+        return ([{"clean": np.zeros(600), "noisy": np.linspace(0, 1, 600),
+                  "fs": 250.0, "ref_peaks": np.array([]),
+                  "noise_category": "synthetic", "ecg_record": "118"}],
+                {"mode": "real", "n_cells": 1, "data_dir": override_dir})
+
+    monkeypatch.setattr(ev, "_load_real_data", fake_loader)
+    res = evaluate(reference_solution(), segments=1, data_dir="/tmp/custom")
+    assert calls == ["/tmp/custom"], calls
+    assert res["mode"] == "real"
+    assert res["data_dir"] == "/tmp/custom"
+
+
+def test_data_dir_override_is_restored_afterwards():
+    """The loaders' directory constants are restored after the call, so a
+    one-off override cannot leak into later evaluations (2.3.5)."""
+    import evaluator as ev
+    if not ev.P2_SRC.is_dir():
+        pytest.skip("project-2 sources not present")
+    if str(ev.P2_SRC) not in sys.path:
+        sys.path.insert(0, str(ev.P2_SRC))
+    import load_real_ecg
+    import load_real_noise
+    before = (load_real_ecg.DATA_ROOT, load_real_noise.NSTDB_DIR)
+    ev._load_real_data(["118"], [0.0], 1, override_dir="/nonexistent-audit-dir")
+    after = (load_real_ecg.DATA_ROOT, load_real_noise.NSTDB_DIR)
+    assert after == before, (before, after)
+
+
+def test_synthetic_fallback_reports_requested_data_dir(monkeypatch):
+    """Falling back to synthetic data still records what was asked for."""
+    import evaluator as ev
+    monkeypatch.setattr(ev, "_load_real_data",
+                        lambda *a, **k: (None, {}))
+    res = evaluate(reference_solution(), segments=1,
+                   data_dir="/tmp/missing-data")
+    assert res["mode"] == "synthetic"
+    assert res["provenance"]["data_unavailable"] is True
+    assert res["provenance"]["requested_data_dir"] == "/tmp/missing-data"
+
+
+# ---------------------------------------------------------------------------
+# 2.4 — protocol / provenance
+# ---------------------------------------------------------------------------
+
+def test_protocol_is_documented_as_independent_evaluation():
+    """No train/validation/test split is invented for a denoising-only
+    task, and the provenance block records the fixed protocol (2.2)."""
+    res = evaluate(reference_solution(), segments=1)
+    prov = res["provenance"]
+    assert "no train/val/test split" in prov["protocol"]
+    assert prov["segment_duration_s"] == 10.0
+    assert prov["segments_per_cell"] == res["segments_per_cell"]
+    assert prov["peak_tolerance_ms"] == 150.0
+    assert prov["seed"] == 3
+    assert prov["ecg_records"] == ["118", "119"]
+    assert prov["noise_records"] == ["bw", "ma", "em"]
+    assert isinstance(prov["software"], dict) and prov["software"]
+
+
+def test_different_seeds_change_the_real_protocol_cells(monkeypatch):
+    """``seed`` reaches the real-data loader (2.3.4), not just the
+    synthetic fallback."""
+    import evaluator as ev
+    seen = []
+
+    def fake_loader(records, snrs, segments, seed=None, override_dir=None):
+        seen.append(seed)
+        return ([{"clean": np.linspace(0, 1, 600), "noisy": np.zeros(600),
+                  "fs": 250.0, "ref_peaks": np.array([]),
+                  "noise_category": "synthetic", "ecg_record": "118"}],
+                {"mode": "real", "n_cells": 1})
+
+    monkeypatch.setattr(ev, "_load_real_data", fake_loader)
+    evaluate(reference_solution(), segments=1, seed=11)
+    evaluate(reference_solution(), segments=1, seed=99)
+    assert seen == [11, 99]

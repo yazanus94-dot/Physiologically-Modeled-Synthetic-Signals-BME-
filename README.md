@@ -36,8 +36,10 @@ Physiologically-Modeled-Synthetic-Signals-BME-/
 ├── project-1-ecg-arrhythmia/      # ECG beat classification (RF + LR + PT detector)
 ├── project-2-ecg-denoising/       # denoising method comparison
 ├── project-3-ppg-hrv/             # PPG peak detection + HRV metrics
-├── .github/workflows/ci.yml       # CI: runs every project's test suite
+├── benchmark-tasks/               # PhysioNet-style benchmark package (TASK.md + evaluator)
+├── .github/workflows/ci.yml       # CI: runs every project's + the benchmark test suites
 ├── requirements.txt               # top-level dependency set (installs all three)
+├── versions.py                    # shared environment-version recorder (metrics provenance)
 └── README.md
 ```
 
@@ -45,9 +47,10 @@ Each project folder is self-contained:
 
 | Folder | Focus | Synthetic | Real (PhysioNet) |
 |---|---|---|---|
-| `project-1-ecg-arrhythmia/` | ECG beat classification | sum-of-Gaussians generator, Pan-Tompkins-style detector, RR/QRS features, RF + LR | MIT-BIH Arrhythmia Database (48 records) — DS1/DS2 split + leakage-audited split, R-peak scoring |
+| `project-1-ecg-arrhythmia/` | ECG beat classification | sum-of-Gaussians generator, Pan-Tompkins-style detector, RR/QRS features, RF + LR | MIT-BIH Arrhythmia Database (48 records) — DS1/DS2 split + leakage-audited split, R-peak scoring, **and a separate detector-driven evaluation** (features from the detector's own peaks, annotations used only as matched labels) |
 | `project-2-ecg-denoising/` | denoising comparison | median baseline removal, Butterworth bandpass, notch, FFT soft-threshold, combined chain | MIT-BIH Noise Stress Test Database — real noise mixed into real ECG at exact SNRs |
 | `project-3-ppg-hrv/` | PPG-based HRV | RSA-modulated generator, adaptive peak detection, SDNN/RMSSD/pNN50, Welch LF/HF | BIDMC PPG + Respiration Dataset — ECG-derived HRV vs PPG-derived PRV |
+| `benchmark-tasks/` | self-contained benchmark package | — | `mitbih_nstdb_denoising_benchmark`: TASK.md (A–H spec) + starter/reference solutions + automated evaluator + `expected_results.json` (360 cells on real MIT-BIH 118/119 + NSTDB) |
 
 ## 📊 Headline results (all measured by the runs in this repository)
 
@@ -67,9 +70,11 @@ Each project folder is self-contained:
 | 1 | MIT-BIH (44 records) | R-peak detection (±50 ms, one-to-one) | sens 0.9434 / prec 0.9560 / F1 0.9497, mean timing error 3.79 ms |
 | 1 | MIT-BIH, classic DS1/DS2 | beat classification (Logistic Regression) | balanced acc. 0.7063, macro-F1 0.5581 |
 | 1 | MIT-BIH, leakage-audited | beat classification (Logistic Regression) | balanced acc. 0.7081, macro-F1 0.5689 |
+| 1 | MIT-BIH, **detector-driven** (causal features) | beat classification (Random Forest) | balanced acc. 0.5014, macro-F1 0.4765 — *lower than annotation-centred on purpose* |
 | 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at −6 dB | **+17.00 dB** (combined +18.21 dB) — records **118, 119** |
 | 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at +24 dB | **−6.44 dB** (already-clean cost) |
 | 2 | NSTDB R-peak (bandpass, predefined ±150 ms) | F1 | **0.606** (sens 0.9920 / prec 0.4390) |
+| B | benchmark `mitbih_nstdb_denoising_benchmark` | reference `overall_score` on real data (360 cells) | **0.8120** vs starter **0.6443** (margin +0.1677) |
 | 3 | BIDMC (3 records) | mean HR difference, HRV vs PRV | **−0.40 %**, beat agreement 97.3 % |
 | 3 | BIDMC (3 records) | SDNN / RMSSD / LF-HF difference | 75.82 % / 84.58 % / 506.56 % |
 
@@ -99,13 +104,15 @@ cd project-3-ppg-hrv/src        && python run_pipeline.py              && cd ../
 cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protocol classic         && cd ../..
 cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protocol leakage_audited && cd ../..
 cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode rpeaks                            && cd ../..
+#   detector-driven classification (annotations used only as matched labels):
+cd project-1-ecg-arrhythmia/src && python run_detector_driven.py                                     && cd ../..
 #   (optional) record-grouped hyperparameter tuning, on demand:
 cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protocol classic --cv     && cd ../..
 cd project-2-ecg-denoising/src  && python run_real_experiment.py --download                        && cd ../..
 cd project-3-ppg-hrv/src        && python run_bidmc_experiment.py --download                       && cd ../..
 
-# tests (211 total: 140 + 39 + 32)
-pytest project-1-ecg-arrhythmia/tests project-2-ecg-denoising/tests project-3-ppg-hrv/tests
+# tests (275 total: 154 + 40 + 49 + 32 benchmark)
+pytest project-1-ecg-arrhythmia/tests project-2-ecg-denoising/tests project-3-ppg-hrv/tests benchmark-tasks/mitbih_nstdb_denoising_benchmark/tests
 ```
 
 Note: `--segments 10` is the default real-run configuration for Project 2
@@ -115,8 +122,9 @@ cross-validation in Project 1 is available via `--cv`; it is off by
 default because beat-level shuffled CV is deliberately unavailable.
 
 Every pipeline writes its metrics (`metrics.json` / `*.csv`) and plots
-(`*.png`) to its own `outputs/` folder. CI runs the same three test
-suites on Python 3.12.
+(`*.png`) to its own `outputs/` folder. CI runs the same four test
+suites (the three projects **and** `benchmark-tasks/`) plus Ruff over
+`versions.py` and `benchmark-tasks/`, on Python 3.12.
 
 ## 📚 Datasets
 

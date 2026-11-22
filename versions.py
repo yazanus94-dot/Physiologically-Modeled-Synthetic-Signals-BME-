@@ -31,5 +31,6 @@ def get_versions() -> dict[str, Any]:
         "matplotlib": _ver("matplotlib"),
         "scikit_learn": _ver("sklearn"),
         "joblib": _ver("joblib"),
+        "seaborn": _ver("seaborn"),
     }
 

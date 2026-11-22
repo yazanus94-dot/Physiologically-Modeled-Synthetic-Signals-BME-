@@ -45,6 +45,13 @@
     "233",
     "234"
   ],
+  "feature_config": "causal_no_rr_next",
+  "future_dependent_features_excluded": [
+    "prematurity_ratio",
+    "rr_mean_local",
+    "rr_next",
+    "rr_ratio"
+  ],
   "per_record": [
     {
       "record": "101",
@@ -969,57 +976,57 @@
   ],
   "models": {
     "random_forest": {
-      "balanced_accuracy": 0.49949000987295267,
-      "macro_f1": 0.47624864904874925,
+      "balanced_accuracy": 0.5014072358021658,
+      "macro_f1": 0.47647798195524443,
       "per_class": {
         "N": {
-          "precision": 0.9533,
-          "recall": 0.9171,
-          "f1": 0.9349,
+          "precision": 0.9542,
+          "recall": 0.923,
+          "f1": 0.9384,
           "support": 41009
         },
         "S": {
-          "precision": 0.0681,
+          "precision": 0.0727,
           "recall": 0.0405,
-          "f1": 0.0508,
+          "f1": 0.052,
           "support": 1778
         },
         "V": {
-          "precision": 0.8416,
-          "recall": 0.9575,
-          "f1": 0.8958,
+          "precision": 0.8301,
+          "recall": 0.9592,
+          "f1": 0.89,
           "support": 2868
         },
         "F": {
-          "precision": 0.0137,
+          "precision": 0.0151,
           "recall": 0.0829,
-          "f1": 0.0236,
+          "f1": 0.0255,
           "support": 374
         }
       },
       "confusion_matrix": [
         [
-          37610,
-          942,
-          234,
-          2223
+          37853,
+          873,
+          262,
+          2021
         ],
         [
-          1650,
+          1640,
           72,
-          55,
+          65,
           1
         ],
         [
-          82,
-          39,
-          2746,
-          1
+          74,
+          41,
+          2751,
+          2
         ],
         [
-          111,
+          103,
           4,
-          228,
+          236,
           31
         ]
       ]
@@ -1081,5 +1088,19 @@
     },
     "n_test_unmatched_detections_fp": 1707,
     "n_test_missed_reference_fn": 5106
-  }
+  },
+  "versions": {
+    "python": "3.14.7",
+    "python_implementation": "CPython",
+    "platform": "Windows-11-10.0.26300-SP0",
+    "numpy": "2.5.4",
+    "scipy": "1.18.1",
+    "pandas": "2.3.3",
+    "wfdb": "4.3.1",
+    "matplotlib": "3.11.2",
+    "scikit_learn": "1.9.1",
+    "joblib": "1.6.0",
+    "seaborn": "0.13.2"
+  },
+  "random_state": 42
 }

@@ -45,8 +45,9 @@ import matplotlib.pyplot as plt  # noqa: E402
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from load_bidmc import (DEFAULT_DATA_DIR, list_local_records,  # noqa: E402
-                        load_record, download_records)
+from load_bidmc import (DEFAULT_DATA_DIR, DEFAULT_RECORDS,  # noqa: E402
+                        REPO_ROOT, download_records, list_local_records,
+                        load_record)
 from ppg_preprocessing import preprocess_ppg, assess_signal_quality  # noqa: E402
 from peak_detect import (detect_peaks, MAX_PULSE_RATE_BPM,  # noqa: E402
                           MIN_PULSE_RATE_BPM, REFRACTORY_S)  # noqa: E402
@@ -69,7 +70,9 @@ def parse_args(argv=None):
     p = argparse.ArgumentParser(
         description="BIDMC real-data HRV (ECG) vs PRV (PPG) experiment")
     p.add_argument("--records", default=None, nargs="+",
-                   help="record names (default: all present locally)")
+                   help="record names (default: the documented subset "
+                        + "/".join(DEFAULT_RECORDS)
+                        + " present locally)")
     p.add_argument("--limit", type=int, default=None,
                    help="use only the first N records")
     p.add_argument("--download", action="store_true",
@@ -587,11 +590,16 @@ def main(argv=None):
     out_dir = os.path.abspath(args.outdir)
     os.makedirs(out_dir, exist_ok=True)
 
-    records = args.records or list_local_records(DEFAULT_DATA_DIR)
+    # Default to the documented experiment subset (README: bidmc01-03),
+    # not every record that happens to be present locally, so a fresh
+    # run reproduces the committed outputs/real/ artefacts.
+    local = list_local_records(DEFAULT_DATA_DIR)
+    records = args.records or [r for r in DEFAULT_RECORDS if r in local]
     if not records and args.download:
         print("No local records — downloading BIDMC from PhysioNet ...")
         download_records(data_dir=DEFAULT_DATA_DIR)
-        records = list_local_records(DEFAULT_DATA_DIR)
+        records = args.records or [r for r in DEFAULT_RECORDS
+                                   if r in list_local_records(DEFAULT_DATA_DIR)]
     if args.limit:
         records = records[:args.limit]
     if not records:
@@ -719,7 +727,11 @@ def main(argv=None):
     payload = {
         "experiment": "bidmc_hrv_prv",
         "dataset": "BIDMC PPG and Respiration Dataset (PhysioNet)",
-        "data_dir": DEFAULT_DATA_DIR,
+        # Portable relative data path (P4): the committed artefacts must
+        # not carry machine-specific absolute paths — the committed
+        # ``outputs/real/metrics.json`` recorded ``data/physionet/bidmc``.
+        "data_dir": os.path.relpath(
+            DEFAULT_DATA_DIR, REPO_ROOT).replace("\\", "/"),
         "definitions": {
             "ecg_hrv": "heart-rate variability computed from ECG R-R "
                        "intervals (WFDB XQRS detector)",
@@ -730,6 +742,20 @@ def main(argv=None):
         "failures": failures,
         "aggregate": aggregate,
     }
+    # Provenance, matching the other real-data outputs: no RNG is
+    # involved in record selection, and the shared repo versions.py
+    # records the environment the artefact was generated in.
+    try:
+        repo_root = os.path.dirname(os.path.dirname(HERE))
+        if repo_root not in sys.path:
+            sys.path.insert(0, repo_root)
+        from versions import get_versions
+        payload["versions"] = get_versions()
+    except Exception:  # noqa: BLE001 - provenance is best-effort
+        payload.pop("versions", None)
+    payload["seed"] = None
+    payload["randomness"] = ("none — deterministic record selection; "
+                             "RF/LR random_state=42 in P1 only")
     path = os.path.join(out_dir, "metrics.json")
     with open(path, "w") as f:
         json.dump(payload, f, indent=2, default=float)

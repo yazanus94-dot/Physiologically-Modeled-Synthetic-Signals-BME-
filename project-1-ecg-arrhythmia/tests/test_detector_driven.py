@@ -17,6 +17,7 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
+from features import FEATURE_CONFIGS, FUTURE_DEPENDENT_RR_FEATURES
 from run_detector_driven import (
     AAMI_CLASSES,
     _causal_rr_features,
@@ -123,3 +124,75 @@ def test_run_detector_driven_eval_report_structure():
         assert "per_class" in rep["models"][m]
     assert rep["test_summary"]["n_test_unmatched_detections_fp"] >= 0
     assert rep["test_summary"]["n_test_missed_reference_fn"] >= 0
+
+
+# ---------------------------------------------------------------------------
+# Named causal feature configuration (audit Phase 3, item 6)
+# ---------------------------------------------------------------------------
+
+def _stub_loader():
+    class StubLoader:
+        def load_record(self, rec):
+            sig, idx = _synthetic_record_signal(n=40000, rr=0.6)
+            n = len(idx)
+            labels = np.array(["N" if k % 3 == 0 else ("V" if k % 3 == 1 else "S")
+                               for k in range(n)])
+            return {"signal": sig, "fs": 360,
+                    "r_peaks": np.array([int(v) for v in idx]),
+                    "labels": labels}
+    return StubLoader()
+
+
+def test_default_feature_config_is_causal_and_recorded():
+    """The detector-driven report names its feature configuration and
+    lists the future-dependent features it excluded (audit Phase 3.6)."""
+    rep = run_detector_driven_eval(_stub_loader(), ["r1"], ["r1"], ["r2"],
+                                   tol_ms=50)
+    assert rep["feature_config"] == "causal_no_rr_next"
+    assert "rr_next" in rep["future_dependent_features_excluded"]
+    assert rep["feature_config"] in FEATURE_CONFIGS
+
+
+def test_detector_driven_features_contain_no_future_dependent_feature():
+    """No column of the detector-driven feature vector may depend on a
+    future beat — ``rr_next`` must never appear."""
+    rep = run_detector_driven_eval(_stub_loader(), ["r1"], ["r1"], ["r2"],
+                                   tol_ms=50)
+    names = rep["feature_names"]
+    assert names, "expected detector-driven feature names"
+    assert "rr_next" not in names
+    assert not (set(names) & FUTURE_DEPENDENT_RR_FEATURES), names
+    # the causal RR context is built from past intervals only
+    assert {"rr_prev", "rr_mean_past", "rr_prev_over_past"} <= set(names)
+
+
+def test_detector_driven_annotations_never_become_feature_columns():
+    """Leakage guard: whatever configuration is selected, no annotation
+    position or label can be selected into the feature matrix."""
+    for cfg in FEATURE_CONFIGS:
+        rep = run_detector_driven_eval(_stub_loader(), ["r1"], ["r1"], ["r2"],
+                                       tol_ms=50, feature_config=cfg)
+        names = rep["feature_names"]
+        assert not any("ann" in n or "label" in n or "symbol" in n
+                       for n in names), (cfg, names)
+
+
+def test_full_feature_config_is_available_and_differs_only_by_rr_columns():
+    """Selecting ``annotation_centred_full`` keeps the extra columns that
+    the causal configuration drops — the switch really does something."""
+    causal = run_detector_driven_eval(_stub_loader(), ["r1"], ["r1"], ["r2"],
+                                      tol_ms=50,
+                                      feature_config="causal_no_rr_next")
+    full = run_detector_driven_eval(_stub_loader(), ["r1"], ["r1"], ["r2"],
+                                    tol_ms=50,
+                                    feature_config="annotation_centred_full")
+    assert full["n_features"] >= causal["n_features"]
+    assert set(causal["feature_names"]) <= set(full["feature_names"])
+    assert full["future_dependent_features_excluded"] == []
+    assert full["feature_config"] == "annotation_centred_full"
+
+
+def test_unknown_feature_config_is_rejected():
+    with pytest.raises(KeyError, match="unknown feature configuration"):
+        run_detector_driven_eval(_stub_loader(), ["r1"], ["r1"], ["r2"],
+                                 feature_config="nope")

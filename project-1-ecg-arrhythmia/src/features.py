@@ -27,13 +27,99 @@ Optional waveform morphology features:
   - S-wave presence/amplitude
   - T-wave features (amplitude, slope)
 """
-import numpy as np
-from scipy.stats import skew, kurtosis
+from typing import List, Optional, Tuple
 
-from typing import Optional, Tuple, List
+import numpy as np
+from scipy.stats import kurtosis, skew
 
 # Default window around R-peak for QRS analysis
 QRS_WINDOW_S = 0.12  # 120 ms total (±60 ms)
+
+
+# ---------------------------------------------------------------------------
+# Feature configurations (audit Phase 3, item 6)
+# ---------------------------------------------------------------------------
+
+#: RR features that cannot be evaluated until a **future beat** exists.
+#:
+#: ===============  =========================================================
+#: ``rr_next``      interval to the *following* beat
+#: ``rr_mean_local`` local mean also averages intervals *after* this beat
+#: ``rr_ratio``     ``rr_next / rr_prev`` — inherits ``rr_next``
+#: ``prematurity_   ``rr_prev / rr_mean_local`` — inherits the future part
+#: ``ratio``        of ``rr_mean_local``
+#: ===============  =========================================================
+#:
+#: Only ``rr_prev`` of the five RR features is computable from the signal
+#: up to the current beat, which is why the detector-driven pipeline
+#: rebuilds its RR context from *past* intervals only
+#: (``run_detector_driven._causal_rr_features``).
+FUTURE_DEPENDENT_RR_FEATURES = frozenset(
+    {"rr_next", "rr_mean_local", "rr_ratio", "prematurity_ratio"}
+)
+
+#: Named feature configurations, resolved by :func:`select_feature_config`.
+#:
+#: ``None`` means "keep every column" — that is the retrospective,
+#: annotation-centred benchmark, whose 14-feature set and results are
+#: **unchanged**.
+FEATURE_CONFIGS = {
+    "annotation_centred_full": None,
+    "causal_no_rr_next": "drop_future_dependent_rr",
+}
+
+
+def select_feature_config(
+    names: list[str], config: str = "causal_no_rr_next"
+) -> tuple[np.ndarray, list[str]]:
+    """Resolve a named feature configuration to ``(indices, kept_names)``.
+
+    Parameters
+    ----------
+    names : list of str
+        Feature names of a candidate feature matrix, in column order.
+    config : str
+        One of :data:`FEATURE_CONFIGS`.
+
+        * ``"annotation_centred_full"`` — keep every column.  This is the
+          existing retrospective benchmark; nothing is dropped and its
+          results do not change.
+        * ``"causal_no_rr_next"`` — drop every feature that needs a
+          **future beat**, i.e. :data:`FUTURE_DEPENDENT_RR_FEATURES`
+          (``rr_next`` and the features derived from it).  The remaining
+          vector depends only on the signal up to the current beat.
+
+    Returns
+    -------
+    indices : np.ndarray of int
+        Column positions to keep (ascending, may be empty).
+    kept_names : list of str
+        The corresponding names, in the original order.
+
+    Raises
+    ------
+    KeyError
+        If ``config`` is not a known configuration.
+
+    Examples
+    --------
+    >>> idx, kept = select_feature_config(
+    ...     ["rr_prev", "rr_next", "qrs_amp"], "causal_no_rr_next")
+    >>> kept
+    ['rr_prev', 'qrs_amp']
+    """
+    if config not in FEATURE_CONFIGS:
+        raise KeyError(
+            f"unknown feature configuration {config!r}; "
+            f"expected one of {sorted(FEATURE_CONFIGS)}"
+        )
+    names = list(names)
+    selector = FEATURE_CONFIGS[config]
+    if selector is None:
+        return np.arange(len(names)), names
+
+    keep = [i for i, n in enumerate(names) if n not in FUTURE_DEPENDENT_RR_FEATURES]
+    return np.asarray(keep, dtype=int), [names[i] for i in keep]
 
 
 def extract_rr_features(r_peaks: np.ndarray, fs: float) -> Tuple[np.ndarray, list]:
@@ -437,8 +523,8 @@ def extract_features_from_beats(
 
 if __name__ == "__main__":
     # Quick test
-    from generate_signal import generate_ecg
     from detect_rpeaks import detect_rpeaks
+    from generate_signal import generate_ecg
 
     signal, r_true, labels, fs = generate_ecg(duration_s=30, fs=250, seed=1)
     r_det = detect_rpeaks(signal, fs)

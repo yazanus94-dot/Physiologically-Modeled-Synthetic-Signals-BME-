@@ -1,17 +1,21 @@
 """Tests for feature extraction."""
-import sys
 import os
+import sys
+
 import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from features import (
-    extract_features, extract_rr_features, extract_qrs_morphology_features,
-    extract_features_from_beats, extract_rr_features_for_annotations,
-    QRS_WINDOW_S
-)
-from aami import map_to_aami_class
 import pytest
+from aami import map_to_aami_class
+from features import (
+    QRS_WINDOW_S,
+    extract_features,
+    extract_features_from_beats,
+    extract_qrs_morphology_features,
+    extract_rr_features,
+    extract_rr_features_for_annotations,
+)
 
 
 def test_extract_rr_features_basic():
@@ -305,6 +309,82 @@ def test_rr_for_annotations_respects_sampling_frequency():
         out[fs] = X[0, 0]
     # A 1 s interval must be 1.0 s at every sampling frequency
     assert all(abs(v - 1.0) < 1e-9 for v in out.values())
+
+
+# ---------------------------------------------------------------------------
+# Named feature configurations (audit Phase 3, item 6)
+# ---------------------------------------------------------------------------
+
+def test_causal_config_excludes_rr_next_and_future_dependent_features():
+    """The causal configuration drops ``rr_next`` **and** every feature
+    derived from a future beat (audit Phase 3.6).
+
+    ``rr_ratio = rr_next / rr_prev`` and ``prematurity_ratio`` /
+    ``rr_mean_local`` also read intervals *after* the current beat, so
+    keeping them would make a "causal" vector non-causal.
+    """
+    from evaluation import EXPECTED_FEATURE_NAMES
+    from features import (
+        FUTURE_DEPENDENT_RR_FEATURES,
+        select_feature_config,
+    )
+
+    assert "rr_next" in FUTURE_DEPENDENT_RR_FEATURES
+    idx, kept = select_feature_config(EXPECTED_FEATURE_NAMES,
+                                      "causal_no_rr_next")
+    # rr_prev survives; every future-dependent RR feature is gone
+    assert "rr_prev" in kept
+    assert not (set(kept) & FUTURE_DEPENDENT_RR_FEATURES), kept
+    assert "rr_next" not in kept
+    # morphology (which needs no future beat) is untouched
+    assert "qrs_amp" in kept and "r_amp_rel" in kept
+    # the kept columns are a subset, in the original order
+    assert [EXPECTED_FEATURE_NAMES[i] for i in idx] == kept
+    assert len(kept) == len(EXPECTED_FEATURE_NAMES) - len(
+        FUTURE_DEPENDENT_RR_FEATURES & set(EXPECTED_FEATURE_NAMES))
+
+
+def test_full_config_keeps_the_existing_benchmark_unchanged():
+    """``annotation_centred_full`` is the identity: the retrospective
+    annotation-centred benchmark and its committed results do not change."""
+    from evaluation import EXPECTED_FEATURE_NAMES
+    from features import select_feature_config
+
+    idx, kept = select_feature_config(EXPECTED_FEATURE_NAMES,
+                                      "annotation_centred_full")
+    assert kept == EXPECTED_FEATURE_NAMES
+    assert list(idx) == list(range(len(EXPECTED_FEATURE_NAMES)))
+    assert len(EXPECTED_FEATURE_NAMES) == 14
+    assert "rr_next" in kept            # the full set still has it
+
+
+def test_causal_config_is_a_strict_subset_of_full():
+    from evaluation import EXPECTED_FEATURE_NAMES
+    from features import select_feature_config
+
+    _i_full, full = select_feature_config(EXPECTED_FEATURE_NAMES,
+                                          "annotation_centred_full")
+    _i_c, causal = select_feature_config(EXPECTED_FEATURE_NAMES,
+                                         "causal_no_rr_next")
+    assert set(causal) < set(full)
+    assert len(causal) == 10            # 14 - 4 future-dependent
+
+
+def test_select_feature_config_rejects_unknown_name():
+    from features import select_feature_config
+    with pytest.raises(KeyError, match="unknown feature configuration"):
+        select_feature_config(["rr_prev"], "does_not_exist")
+
+
+def test_select_feature_config_is_order_preserving_and_stable():
+    from features import select_feature_config
+    names = ["qrs_amp", "rr_next", "rr_prev", "rr_ratio"]
+    idx, kept = select_feature_config(names, "causal_no_rr_next")
+    assert list(idx) == [0, 2]
+    assert kept == ["qrs_amp", "rr_prev"]
+    # idempotent: applying it again changes nothing
+    idx2, kept2 = select_feature_config(kept, "causal_no_rr_next")
+    assert list(idx2) == [0, 1] and kept2 == kept
 
 
 if __name__ == "__main__":

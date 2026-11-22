@@ -14,12 +14,17 @@ evaluation**:
 4. Extract **causal morphology features** around detected peaks
    (``extract_qrs_morphology_features``) and **causal RR features using
    only past intervals** (``_causal_rr_features``).
-5. Train RF / LR and evaluate with per-class metrics, confusion matrix,
+5. Apply a **named feature configuration** — by default
+   ``"causal_no_rr_next"`` (``features.FEATURE_CONFIGS``), which drops
+   every feature that needs a future beat (``rr_next`` and everything
+   derived from it).  The chosen configuration is recorded in the report.
+6. Train RF / LR and evaluate with per-class metrics, confusion matrix,
    and a confusion figure.
 
 Report (``outputs/detector_driven/metrics.json``):
 - Matched beats (TP), unmatched detections (FP), missed reference beats
   (FN).
+- The feature configuration used and the excluded feature names.
 - Classification metrics (balanced accuracy, macro-F1, per-class) on
   matched detections.
 - Combined end-to-end detection + classification limitations.
@@ -44,13 +49,23 @@ OUT_DIR = os.path.join(PROJECT_DIR, "outputs", "detector_driven")
 
 from aami import get_aami_classes, map_to_aami_class
 from detect_rpeaks import detect_rpeaks, match_peaks_one_to_one
-from features import extract_qrs_morphology_features
+from features import (
+    FEATURE_CONFIGS,
+    FUTURE_DEPENDENT_RR_FEATURES,
+    extract_qrs_morphology_features,
+    select_feature_config,
+)
 from load_mitbih import MITBIHLoader
 
 AAMI_CLASSES = get_aami_classes()  # ["N", "S", "V", "F"]
 
 FS_TARGET = 360
 TOL_MS = 50.0  # predefined one-to-one matching tolerance
+
+#: Default feature configuration for the detector-driven evaluation:
+#: every feature that needs a *future beat* (``rr_next`` and the features
+#: derived from it) is excluded, so the vector is causal by construction.
+DEFAULT_FEATURE_CONFIG = "causal_no_rr_next"
 
 
 def _causal_rr_features(det_peaks: np.ndarray, fs: float) -> tuple[np.ndarray, list[str]]:
@@ -149,9 +164,21 @@ def _plot_confusion(y_true, y_pred, class_names, path, record):
 
 def run_detector_driven_eval(loader, train_records, val_records, test_records,
                              fs_target=FS_TARGET, tol_ms=TOL_MS,
-                             random_state=42):
+                             random_state=42,
+                             feature_config=DEFAULT_FEATURE_CONFIG):
     """Detect → match (one-to-one, ±tol_ms) → label from matched
-    annotations only → classify with causal features."""
+    annotations only → classify with causal features.
+
+    ``feature_config`` selects a named configuration from
+    ``features.FEATURE_CONFIGS`` (default ``"causal_no_rr_next"``): every
+    feature that depends on a **future beat** — ``rr_next`` and the
+    features derived from it — is dropped before training.  The chosen
+    configuration and the excluded names are recorded in the report.
+    """
+    if feature_config not in FEATURE_CONFIGS:
+        raise KeyError(f"unknown feature configuration {feature_config!r}; "
+                       f"expected one of {sorted(FEATURE_CONFIGS)}")
+
     def _prepare(records):
         Xs, ys, stats = [], [], []
         for rec in records:
@@ -172,6 +199,13 @@ def run_detector_driven_eval(loader, train_records, val_records, test_records,
                             if ref_idx < len(ann_symbols)}
             X, y, names, n_unmatched, _n_matched = _matched_features(
                 signal, det, label_rows, b["fs"])
+            # Apply the named feature configuration (causal by default):
+            # annotation *positions* still never enter X — this only
+            # selects among detector-derived columns.
+            all_names = list(names)
+            idx, names = select_feature_config(all_names, feature_config)
+            if X.ndim == 2 and X.shape[1] == len(all_names):
+                X = X[:, idx]
             Xs.append(X); ys.append(y)
             stats.append({"record": rec,
                           "n_detected": int(det.size),
@@ -188,6 +222,10 @@ def run_detector_driven_eval(loader, train_records, val_records, test_records,
     X_test, y_test, stats_test = _prepare(test_records)
     report = {"tolerance_ms": float(tol_ms), "fs_target": float(fs_target),
               "train_records": list(train_records), "test_records": list(test_records),
+              "feature_config": feature_config,
+              "future_dependent_features_excluded": (
+                  sorted(FUTURE_DEPENDENT_RR_FEATURES)
+                  if FEATURE_CONFIGS[feature_config] is not None else []),
               "per_record": stats_train + stats_test, "models": {}}
 
     if X_train.shape[0] == 0 or X_test.shape[0] == 0:
@@ -227,6 +265,18 @@ def main():
     classic = get_classic_split()
     report = run_detector_driven_eval(
         loader, classic.train_records, classic.val_records, classic.test_records)
+    # Provenance (shared repo ``versions.py``) so the committed
+    # metrics.json records the environment it was generated in, like the
+    # other P1 outputs.
+    try:
+        repo_root = os.path.dirname(PROJECT_DIR)
+        if repo_root not in sys.path:
+            sys.path.insert(0, repo_root)
+        from versions import get_versions
+        report["versions"] = get_versions()
+    except Exception:  # noqa: BLE001, S110 - provenance is best-effort
+        pass
+    report["random_state"] = 42
     with open(os.path.join(OUT_DIR, "metrics.json"), "w") as fh:
         json.dump(report, fh, indent=2, default=float)
     for k, v in report["models"].items():

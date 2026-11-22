@@ -19,8 +19,13 @@ import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from peak_detect import (MAX_PULSE_RATE_BPM, REFRACTORY_S, detect_peaks,
-                         match_peaks_one_to_one, score_detector)  # noqa: E402
+from peak_detect import (
+    MAX_PULSE_RATE_BPM,
+    REFRACTORY_S,
+    detect_peaks,
+    match_peaks_one_to_one,  # noqa: E402
+    score_detector,
+)
 
 FS = 125.0
 DURATION_S = 40.0
@@ -209,6 +214,66 @@ def test_detector_refractory_matches_config():
     assert 60.0 / (d / fs) >= MAX_PULSE_RATE_BPM  # reach the declared max
 
 
+def test_central_rate_config_is_used_consistently_everywhere():
+    """P3.1 / audit Phase 4.2: the 40–200 bpm band is *one* configuration
+    used by the detector, the interval filtering and the quality rules —
+    not a set of independently hardcoded literals.
+
+    Checks:
+    * ``peak_detect`` exposes MIN/MAX and derives both the refractory
+      period and the plausibility window from them;
+    * ``quality_assessment``'s plausibility limits default to those same
+      constants (they used to be literal ``40`` / ``200``);
+    * ``run_bidmc_experiment`` derives its interval filter from them;
+    * the README states the same band.
+    """
+    import inspect
+
+    import quality_assessment as qa
+    import run_bidmc_experiment as rbe
+    from peak_detect import MIN_PULSE_RATE_BPM, PL_HI_S, PL_LO_S
+
+    assert (MIN_PULSE_RATE_BPM, MAX_PULSE_RATE_BPM) == (40.0, 200.0)
+
+    # Derived windows
+    assert PL_LO_S == pytest.approx(60.0 / MAX_PULSE_RATE_BPM)   # 0.30 s
+    assert PL_HI_S == pytest.approx(60.0 / MIN_PULSE_RATE_BPM)   # 1.50 s
+    assert REFRACTORY_S == pytest.approx(PL_LO_S)
+
+    # quality_assessment defaults reference the central constants
+    for fn in (qa.interval_suspects, qa.compare_intervals, qa.assess_record):
+        d = inspect.signature(fn).parameters
+        assert d["min_hr_bpm"].default is MIN_PULSE_RATE_BPM, fn.__name__
+        assert d["max_hr_bpm"].default is MAX_PULSE_RATE_BPM, fn.__name__
+    assert qa.DEFAULT_MIN_HR_BPM is MIN_PULSE_RATE_BPM
+    assert qa.DEFAULT_MAX_HR_BPM is MAX_PULSE_RATE_BPM
+
+    # the experiment's interval filter is computed from the same constants
+    src = inspect.getsource(rbe)
+    assert "60.0 / MAX_PULSE_RATE_BPM" in src
+    assert "60.0 / MIN_PULSE_RATE_BPM" in src
+
+    # and the README documents the identical band
+    readme_path = os.path.join(os.path.dirname(__file__), "..", "README.md")
+    with open(readme_path, encoding="utf-8") as fh:
+        readme = fh.read()
+    assert "40" in readme and "200 bpm" in readme
+
+
+def test_quality_hard_limits_match_detector_plausibility_window():
+    """The interval-quality hard limits and the detector's plausibility
+    window must accept exactly the same interval range."""
+    from peak_detect import PL_HI_S, PL_LO_S
+    from quality_assessment import interval_suspects
+
+    out = interval_suspects(np.array([PL_LO_S, PL_HI_S]), np.array([0.0, 1.0]))
+    assert "implausible_interval" not in out.get("reasons", []), out
+    # just outside the window on either side is flagged
+    out2 = interval_suspects(np.array([0.5 * PL_LO_S, 2.0 * PL_HI_S]),
+                             np.array([0.0, 1.0]))
+    assert "implausible_interval" in out2.get("reasons", []), out2
+
+
 # ---------------------------------------------------------------------------
 # ECG reference (XQRS) — documented as automated
 # ---------------------------------------------------------------------------
@@ -216,8 +281,8 @@ def test_detector_refractory_matches_config():
 def test_detect_r_peaks_is_automated_reference():
     """The ECG reference must be documented as an automated detector, not
     manual annotation (P3.7, part 1)."""
-    from ecg_reference import detect_r_peaks  # noqa: F401
     import ecg_reference
+    from ecg_reference import detect_r_peaks  # noqa: F401
     assert "xqrs" in ecg_reference.detect_r_peaks.__doc__.lower() \
         or "automated" in (ecg_reference.detect_r_peaks.__doc__ or "").lower()
 

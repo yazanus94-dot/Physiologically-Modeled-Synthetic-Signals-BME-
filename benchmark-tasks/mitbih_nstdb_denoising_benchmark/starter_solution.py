@@ -3,8 +3,13 @@
 The simplest reasonable solution: a zero-phase Butterworth band-pass
 (0.5–40 Hz) on the noisy segment.  Fast, easy to understand, and a
 plausible "first attempt" — the reference solution in
-``reference_solution.py`` beats it by adding a median-baseline-removal
-step and an FFT soft-threshold denoiser.
+``reference_solution.py`` beats it by adding a **median baseline-removal**
+step and a **50 Hz IIR notch** in front of the same band-pass, which is
+worth +0.51 dB of mean SNR improvement and +0.17 of overall score on the
+fixed protocol (see ``expected_results.json``).
+
+It also fails the evaluator's short-segment edge check, because
+``sosfiltfilt`` needs more pad length than the 16-sample probe provides.
 """
 
 from dataclasses import dataclass

@@ -51,6 +51,12 @@ DEFAULT_RECORDS = ["118", "119"]
 DEFAULT_SEGMENTS = 10
 DEFAULT_SEED = 3
 DEFAULT_TOLERANCE_MS = 150.0
+#: Segment duration (seconds) of every evaluation cell — one documented
+#: value used by the evaluator, TASK.md and expected_results.json.
+DEFAULT_SEGMENT_S = 10.0
+#: Worst improvement the performance mapping accepts; also the score given
+#: to a cell whose output is malformed (maps to 0 after clipping).
+PERF_FLOOR_DB = -10.0
 
 
 def _import_optional(name):
@@ -71,16 +77,40 @@ def _import_optional(name):
     return mod
 
 
+def _software_versions():
+    """Software versions stamped onto results (audit 2.4).
+
+    Uses the repo's shared ``versions.py`` when it is importable and
+    degrades to a minimal record when the package is run standalone.
+    """
+    try:
+        if str(REPO_ROOT) not in sys.path:
+            sys.path.insert(0, str(REPO_ROOT))
+        from versions import get_versions
+        return get_versions()
+    except Exception:  # noqa: BLE001 - standalone copy of the package
+        import platform
+        import sys as _sys
+        return {"python": _sys.version.split()[0],
+                "platform": platform.platform()}
+
+
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
 
 def _load_real_data(records, snrs, segments, seed=DEFAULT_SEED,
                     override_dir=None):
-    """Load real ECG + noise. Returns (cells, loader_info) or None.
+    """Load real ECG + noise. Returns ``(cells, loader_info)``.
 
-    ``override_dir`` is passed to the repo loaders as ``data_dir`` (None
-    uses the loaders' default).
+    ``override_dir`` is the **PhysioNet data root** the caller asked for
+    (the directory that contains ``mitdb/`` and ``nstdb/``).  ``None``
+    keeps the repo loaders' own default (``<repo>/data/physionet``).
+
+    Audit 2.3.5: the override is applied to the loaders' module-level
+    directory constants *for the duration of this call only* and is
+    restored afterwards, so a caller-supplied ``data_dir`` really does
+    select the data that is read and cannot leak into later calls.
     """
     try:
         if str(P2_SRC) not in sys.path:
@@ -92,21 +122,28 @@ def _load_real_data(records, snrs, segments, seed=DEFAULT_SEED,
     except Exception:  # noqa: BLE001
         return None, {}
 
-    data_dir = override_dir
-    if data_dir:
-        # Implement `data_dir` by pointing the repo loaders' module-level
-        # directory constants at the requested root.  The loaders derive
-        # paths from these constants at call time (`records_dir` /
-        # `NSTDB_DIR`), so no signature changes are needed.
+    # The loaders derive their paths from module-level constants at call
+    # time (`records_dir()` reads `DATA_ROOT`, `load_noise_record()` reads
+    # `NSTDB_DIR`), so pointing those constants at the requested root is
+    # enough — no signature changes are needed.
+    saved_dirs = None
+    if override_dir:
         import load_real_ecg as _ecg_mod
         import load_real_noise as _noise_mod
-        _ecg_mod.DATA_ROOT = data_dir
-        _noise_mod.NSTDB_DIR = os.path.join(data_dir, "nstdb")
-    ecg_loaded = load_ecg_records(records, channel=0)
-    noise_loaded = load_noise_records(NSTDB_NOISE_RECORDS, channel=0)
+        saved_dirs = (_ecg_mod.DATA_ROOT, _noise_mod.NSTDB_DIR)
+        _ecg_mod.DATA_ROOT = str(override_dir)
+        _noise_mod.NSTDB_DIR = os.path.join(str(override_dir), "nstdb")
+
+    try:
+        ecg_loaded = load_ecg_records(records, channel=0)
+        noise_loaded = load_noise_records(NSTDB_NOISE_RECORDS, channel=0)
+    finally:
+        if saved_dirs is not None:
+            _ecg_mod.DATA_ROOT, _noise_mod.NSTDB_DIR = saved_dirs
+
     if not ecg_loaded or not noise_loaded:
         return None, {"ecg": len(ecg_loaded), "noise": len(noise_loaded),
-                      "data_dir": data_dir}
+                      "data_dir": str(override_dir) if override_dir else None}
 
     cells = []
     rng = np.random.default_rng(seed)
@@ -115,8 +152,8 @@ def _load_real_data(records, snrs, segments, seed=DEFAULT_SEED,
             for ecg in ecg_loaded:
                 fs_ecg = ecg["fs"]
                 fs_noise = noise["fs"]
-                n_ecg = round(10.0 * fs_ecg)
-                n_noise = round(10.0 * fs_noise)
+                n_ecg = round(DEFAULT_SEGMENT_S * fs_ecg)
+                n_noise = round(DEFAULT_SEGMENT_S * fs_noise)
                 for seg in range(segments):
                     ecg_start = seg * n_ecg
                     if ecg_start + n_ecg > len(ecg["signal"]):
@@ -151,14 +188,15 @@ def _load_real_data(records, snrs, segments, seed=DEFAULT_SEED,
                         "fs": float(fs_ecg),
                         "ref_peaks": ref_peaks,
                     })
-    return (cells, {"mode": "real", "n_cells": len(cells)})
+    return (cells, {"mode": "real", "n_cells": len(cells),
+                    "data_dir": str(override_dir) if override_dir else None})
 
 
 def _synthetic_cell(seed):
     """Deterministic synthetic ECG + noise pair for offline evaluation."""
     rng = np.random.default_rng(seed)
     fs = 250.0
-    n = int(10 * fs)
+    n = int(DEFAULT_SEGMENT_S * fs)
     t = np.arange(n) / fs
     # QRS-like morphology: sum of Gaussians at ~5 Hz base rate
     clean = np.zeros(n)
@@ -237,8 +275,10 @@ def nrmse(a, b):
 
 def prd(a, b):
     a = np.asarray(a, dtype=float); b = np.asarray(b, dtype=float)
-    return float(100 * np.linalg.norm(zero_mean(a) - zero_mean(b)) /
-                 np.linalg.norm(zero_mean(a)))
+    den = np.linalg.norm(zero_mean(a))
+    if den <= 0:
+        return float("nan")   # degenerate reference (zero power)
+    return float(100 * np.linalg.norm(zero_mean(a) - zero_mean(b)) / den)
 
 
 def pearson(a, b):
@@ -312,10 +352,21 @@ def _digest(x):
     ).hexdigest()
 
 
-def _score_structure(out, expected_len):
+#: An output must retain at least this fraction of the input's peak-to-peak
+#: range.  Guards against "almost constant" outputs that are technically
+#: non-flat but carry no signal (audit 2.3.8).
+MIN_PTP_RETENTION = 1e-6
+
+
+def _score_structure(out, expected_len, expected_ptp=None):
     """Structure validity: ndarray, 1-D, non-empty, right shape, finite,
     and non-degenerate (a constant output is invalid — there is no
-    signal left to denoise)."""
+    signal left to denoise).
+
+    ``expected_ptp`` is the input's peak-to-peak range.  When given, the
+    output must retain at least ``MIN_PTP_RETENTION`` of it, so a nearly
+    flat array cannot pass as a denoised signal (audit 2.3.1 / 2.3.8).
+    """
     if not isinstance(out, np.ndarray):
         return False
     if out.ndim != 1 or out.size == 0:
@@ -327,7 +378,14 @@ def _score_structure(out, expected_len):
     # Degenerate constant output (e.g. zeros or flat values) carries no
     # signal content — reject when the input is long enough to have
     # variation.  Short synthetic inputs can be legitimately flat.
-    return not (out.size >= 8 and float(np.ptp(out)) <= 0.0)
+    if out.size < 8:
+        return True
+    ptp = float(np.ptp(out))
+    if ptp <= 0.0:
+        return False
+    if expected_ptp is not None and float(expected_ptp) > 0.0:
+        return ptp >= MIN_PTP_RETENTION * float(expected_ptp)
+    return True
 
 
 def _score_numerical_validity(out):
@@ -377,30 +435,65 @@ def _score_signal_processing(noisy, out, fs, solution):
             return 0.0
         in_p = _bin_pwr(mixed, f0)
         out_pwr = _bin_pwr(out_p[:n], f0) if out_p.size >= n else 0.0
-        att = -10.0 * np.log10(out_pwr / in_p) if in_p > 0 else 0.0
+        if in_p > 0 and out_pwr > 0:
+            att = -10.0 * np.log10(out_pwr / in_p)
+        elif in_p > 0:
+            # No probe energy left in the output at all -> the full cap.
+            att = 30.0
+        else:
+            att = 0.0
         supp.append(min(max(att, 0.0), 30.0) / 30.0)
     return float(np.mean(supp))
 
 
-def _score_performance(cells, out_by_idx, detect_fn, tolerance_ms=DEFAULT_TOLERANCE_MS):
-    imps, rmses, nrmss, prds, pears, rpks = [], [], [], [], [], []
-    for cell, out in zip(cells, out_by_idx):
+def _score_performance(cells, out_by_idx, detect_fn,
+                       tolerance_ms=DEFAULT_TOLERANCE_MS, valid=None):
+    """Aggregate the performance sub-score and its diagnostic metrics.
+
+    Audit 2.3.8: a cell whose output failed the structure check earns **no**
+    performance credit — it is scored at ``PERF_FLOOR_DB`` (which maps to
+    0 after clipping) instead of being silently tiled/resized into a
+    plausible-looking waveform.  Malformed outputs therefore cannot bank a
+    high performance sub-score while only losing the structure sub-score.
+
+    ``valid[i]`` is the structure verdict for cell ``i`` (default: all
+    valid, so direct callers of this helper keep working).
+    """
+    if valid is None:
+        valid = [True] * len(cells)
+    imps, scored, rmses, nrmss, prds, pears, rpks = [], [], [], [], [], [], []
+    for cell, out, is_valid in zip(cells, out_by_idx, valid):
         clean = np.asarray(cell["clean"], dtype=float)
-        est = np.asarray(out, dtype=float)[:clean.size] if out.size >= clean.size \
-            else np.resize(out, clean.size)
-        imps.append(snr_db(clean, est) - snr_db(clean, cell["noisy"]))
-        rmses.append(rmse(clean, est))
-        nrmss.append(nrmse(clean, est))
-        prds.append(prd(clean, est))
-        pears.append(pearson(clean, est))
-        det = detect_fn(est, cell["fs"])
+        out = np.asarray(out, dtype=float)
+        if not is_valid or out.size != clean.size:
+            # Malformed output: floor the score, do not fabricate a signal
+            # by tiling it to the reference length.
+            scored.append(PERF_FLOOR_DB)
+            continue
+
+        # Performance credit (floored when the improvement is undefined,
+        # e.g. a degenerate zero-power reference cell).
+        imp = snr_db(clean, out) - snr_db(clean, cell["noisy"])
+        if np.isfinite(imp):
+            imps.append(imp)
+            scored.append(imp)
+        else:
+            scored.append(PERF_FLOOR_DB)
+
+        # Diagnostics are reported for every structurally valid output,
+        # independently of whether its SNR improvement is defined.
+        rmses.append(rmse(clean, out))
+        nrmss.append(nrmse(clean, out))
+        prds.append(prd(clean, out))
+        pears.append(pearson(clean, out))
+        det = detect_fn(out, cell["fs"])
         rpks.append(rpeak_metrics(cell["ref_peaks"], det, cell["fs"],
                                   tolerance_ms=tolerance_ms))
     mean_imp = _mean(imps)
     # Performance: honest SNR improvement mapped into [0, 1].  Improvement
     # in [-10, +30] dB -> [0, 1] (clipped).
     perf = float(np.mean([np.clip((v + 10.0) / 40.0, 0.0, 1.0)
-                          for v in imps])) if imps else 0.0
+                          for v in scored])) if scored else 0.0
     return perf, {
         "mean_snr_improvement_db": mean_imp,
         "mean_rmse": _mean(rmses),
@@ -411,6 +504,8 @@ def _score_performance(cells, out_by_idx, detect_fn, tolerance_ms=DEFAULT_TOLERA
         "mean_rpeak_precision": _mean([r["rpeak_precision"] for r in rpks]),
         "mean_rpeak_f1": _mean([r["rpeak_f1"] for r in rpks]),
         "n_cells": len(cells),
+        "n_scored_cells": len(scored),
+        "n_well_defined_cells": len(imps),
         "improvements_db": [round(v, 3) for v in imps],
         "per_cell_rpeak": rpks,
     }
@@ -443,21 +538,31 @@ def evaluate(solution, records=None, snrs=None, segments=DEFAULT_SEGMENTS,
         R-peak one-to-one matching tolerance (default 150 ms — the
         predefined value; not chosen from results).
     data_dir : str or None
-        PhysioNet data root passed to the repo loaders; ``None`` uses the
-        loader's default.
+        PhysioNet **data root** (the directory containing ``mitdb/`` and
+        ``nstdb/``) passed to the repo loaders.  It is honoured on the
+        first load, not only when the default directory already holds
+        data.  ``None`` uses the loaders' default (``<repo>/data/physionet``).
+
+    Notes
+    -----
+    This is a **fixed, independent evaluation protocol**: there is no
+    training step, so no train/validation/test split exists (see TASK.md
+    section B).
     """
     records = list(records or DEFAULT_RECORDS)
     snrs = list(snrs or TARGET_SNR_LEVELS)
 
-    cells, meta = _load_real_data(records, snrs, segments, seed=seed)
-    if data_dir is not None and cells:
-        # Re-load honouring the caller's data directory (loaders default
-        # when None).
-        cells, meta = _load_real_data(
-            records, snrs, segments, seed=seed,
-            override_dir=data_dir)
+    # Audit 2.3.5: one call, honouring ``data_dir`` from the start — the
+    # previous implementation only re-loaded with the caller's directory
+    # when the *default* directory already had data, so a non-default
+    # ``data_dir`` was silently ignored on a fresh checkout.
+    cells, meta = _load_real_data(records, snrs, segments, seed=seed,
+                                  override_dir=data_dir)
     if cells is None or not cells:
         cells, meta = _synthetic_cells(snrs, segments, seed=seed)
+        if data_dir is not None:
+            meta = dict(meta, requested_data_dir=str(data_dir),
+                        data_unavailable=True)
 
     detect_fn = detect_r_peaks_default
     if P2_SRC.is_dir():
@@ -466,6 +571,7 @@ def evaluate(solution, records=None, snrs=None, segments=DEFAULT_SEGMENTS,
             detect_fn = m.detect_r_peaks
 
     outputs = []
+    valid_flags = []
     structure_ok = True
     numerical_valid = True
     sp_scores = []
@@ -473,26 +579,43 @@ def evaluate(solution, records=None, snrs=None, segments=DEFAULT_SEGMENTS,
         res = solution.denoise(cell["noisy"], cell["fs"])
         out = res.signal if hasattr(res, "signal") else res
         out = np.asarray(out, dtype=float)
-        ok = _score_structure(out, cell["noisy"].size)
+        # ``expected_ptp`` makes the structure check reject flat/near-flat
+        # outputs, which is what lets us withhold performance and
+        # signal-processing credit from them (audit 2.3.8).
+        ok = _score_structure(out, cell["noisy"].size,
+                              expected_ptp=float(np.ptp(cell["noisy"])))
         structure_ok = structure_ok and ok
         numerical_valid = numerical_valid and _score_numerical_validity(out)
+        # A structurally invalid output earns no signal-processing credit:
+        # a flat array has (numerically) zero power at 50/60 Hz and would
+        # otherwise look like a perfect mains notch (audit 2.3.8).
         sp_scores.append(_score_signal_processing(
-            cell["noisy"], out, cell["fs"], solution))
+            cell["noisy"], out, cell["fs"], solution) if ok else 0.0)
         outputs.append(out)
+        valid_flags.append(bool(ok))
 
     perf, perf_metrics = _score_performance(
-        cells, outputs, detect_fn, tolerance_ms=tolerance_ms)
+        cells, outputs, detect_fn, tolerance_ms=tolerance_ms,
+        valid=valid_flags)
     sp = _mean(sp_scores)
+    if not np.isfinite(sp):
+        sp = 0.0
 
     # Reproducibility: run twice on the first cell and compare digests.
+    # (Audit: uses the same "object with .signal, or a bare ndarray"
+    # unwrapping as the main loop, so a plain-array solution cannot crash
+    # here, and exposes the digest so TASK.md section A's promise holds.)
     first_cell = cells[0] if cells else None
     repro_ok = True
+    repro_digest = None
     if first_cell is not None:
-        r1 = np.asarray(solution.denoise(first_cell["noisy"], first_cell["fs"]).signal,
-                        dtype=float)
-        r2 = np.asarray(solution.denoise(first_cell["noisy"], first_cell["fs"]).signal,
-                        dtype=float)
-        repro_ok = bool(_digest(r1) == _digest(r2))
+        def _unwrap(res):
+            return np.asarray(res.signal if hasattr(res, "signal") else res,
+                              dtype=float)
+        r1 = _unwrap(solution.denoise(first_cell["noisy"], first_cell["fs"]))
+        r2 = _unwrap(solution.denoise(first_cell["noisy"], first_cell["fs"]))
+        repro_digest = _digest(r1)
+        repro_ok = bool(repro_digest == _digest(r2))
 
     # Edge robustness (audit 2.3.2): the solution must not crash and must
     # return a finite output of the correct shape on a short segment and on
@@ -527,12 +650,38 @@ def evaluate(solution, records=None, snrs=None, segments=DEFAULT_SEGMENTS,
     return {
         "mode": meta["mode"],
         "records": records,
+        "noise_records": list(NSTDB_NOISE_RECORDS),
         "n_cells": len(cells),
         "snrs": snrs,
         "segments_per_cell": segments,
+        "segment_duration_s": DEFAULT_SEGMENT_S,
         "seed": seed,
         "peak_tolerance_ms": tolerance_ms,
+        "data_dir": (str(data_dir) if data_dir is not None
+                     else meta.get("data_dir")),
         "overall_score": round(float(overall), 4),
+        "structure_ok": bool(structure_ok),
+        "reproducibility_digest": repro_digest,
+        "provenance": {
+            "protocol": "fixed independent evaluation (no train/val/test split)",
+            "ecg_records": records,
+            "noise_records": list(NSTDB_NOISE_RECORDS),
+            "noise_categories": ["baseline_wander", "muscle_artifact",
+                                 "electrode_motion"],
+            "target_snr_db": snrs,
+            "segments_per_cell": segments,
+            "segment_duration_s": DEFAULT_SEGMENT_S,
+            "n_cells": len(cells),
+            "seed": seed,
+            "peak_tolerance_ms": tolerance_ms,
+            "data_dir": (str(data_dir) if data_dir is not None
+                         else meta.get("data_dir")),
+            "mode": meta["mode"],
+            "software": _software_versions(),
+            # Present only when the requested directory could not be used.
+            **({k: meta[k] for k in ("requested_data_dir", "data_unavailable")
+                if k in meta}),
+        },
         "sub_scores": {
             "structure": 1.0 if structure_ok else 0.0,
             "numerical_validity": 1.0 if numerical_valid else 0.0,

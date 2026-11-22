@@ -40,6 +40,14 @@ DEFAULT_DATA_DIR = os.path.join(REPO_ROOT, "data", "physionet", "bidmc")
 
 N_RECORDS = 53  # bidmc01 .. bidmc53
 
+#: Records the real experiment runs on by default (README: "3 records,
+#: ``bidmc01``–``bidmc03``").  The database contains :data:`N_RECORDS`
+#: (53) recordings; restricting the default keeps the committed
+#: ``outputs/real/`` artefacts reproducible from a plain
+#: ``python run_bidmc_experiment.py --download``.  Pass ``records=``
+#: explicitly to analyse others.
+DEFAULT_RECORDS = ["bidmc01", "bidmc02", "bidmc03"]
+
 # Channel-name conventions observed in the real headers (documented here
 # for reference only -- identification is done by matching, see
 # identify_channels()).
@@ -183,7 +191,10 @@ def download_records(records=None, data_dir=DEFAULT_DATA_DIR, overwrite=False):
     Parameters
     ----------
     records : list of str or None
-        Record names, e.g. ['bidmc01', 'bidmc02']; None downloads all 53.
+        Record names, e.g. ``['bidmc01', 'bidmc02']``; None downloads
+        :data:`DEFAULT_RECORDS` (``bidmc01``–``bidmc03``, the subset the
+        real experiment reports on).  The full database is
+        ``["bidmc%02d" % i for i in range(1, N_RECORDS + 1)]``.
     data_dir : str
         Destination directory (repo-root ``data/physionet/bidmc``).
 
@@ -193,7 +204,7 @@ def download_records(records=None, data_dir=DEFAULT_DATA_DIR, overwrite=False):
     """
     os.makedirs(data_dir, exist_ok=True)
     if records is None:
-        records = ["bidmc%02d" % i for i in range(1, N_RECORDS + 1)]
+        records = list(DEFAULT_RECORDS)
     # The 1 Hz numerics are separate WFDB records (bidmc01n, ...) that are
     # NOT listed in the database RECORDS file, so request them explicitly.
     expanded = []

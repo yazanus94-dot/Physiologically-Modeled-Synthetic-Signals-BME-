@@ -767,6 +767,15 @@ def run_experiment(args):
         "verified_achieved_vs_target": bool(
             achieved_errors and max(achieved_errors) < 1e-6),
     }
+    # Provenance (shared repo ``versions.py``): the committed
+    # outputs/real/metrics.json records the environment it was
+    # generated in, like report.json does.
+    try:
+        sys.path.insert(0, os.path.join(PROJECT_DIR, os.pardir))
+        from versions import get_versions
+        metrics_json["versions"] = get_versions()
+    except Exception:  # noqa: BLE001
+        metrics_json.pop("versions", None)
     metrics_csv = os.path.join(args.outdir, "metrics.json")
     with open(metrics_csv, "w") as fh:
         json.dump(metrics_json, fh, indent=2, default=float)
