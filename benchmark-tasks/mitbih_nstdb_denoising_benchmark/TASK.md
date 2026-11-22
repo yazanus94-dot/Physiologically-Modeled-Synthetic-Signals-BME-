@@ -138,7 +138,9 @@ removal → 50 Hz notch → 0.5–40 Hz band-pass.  `fft_soft_threshold` is
 provided as a documented, tested *alternative* stage (it is exercised by
 the module's own helpers and is what Project 2's `fft` method uses), but
 it is **not** part of the default pipeline; on this protocol it scores
-below the combined chain, so it is not what the reference submits.
+below the combined chain (measured overall 0.7446 vs 0.8123 — the
+combined chain reaches higher SNR gain *and* a higher overall score, so
+it is the better submission; it is not what the reference submits).
 
 Each stage is documented with its parameter choices and the scientific
 rationale.  The reference implementation returns a `DenoisingResult`

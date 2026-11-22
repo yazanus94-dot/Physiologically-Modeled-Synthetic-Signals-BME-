@@ -157,8 +157,9 @@ def denoise(noisy, fs):
     * **0.5–40 Hz Butterworth band-pass** finalises the ECG band.
 
     Result: mean SNR improvement **+3.16 dB** vs **+2.65 dB** for the
-    band-pass-only starter, and a strictly higher score at every target
-    SNR from −6 dB to +24 dB (see ``expected_results.json``).
+    band-pass-only starter (measured gap **+0.51 dB**, and a strictly
+    higher overall score at every target SNR from −6 dB to +24 dB —
+    see ``expected_results.json``).
     """
     return combined_pipeline(noisy, fs, powerline_hz=50.0)
 

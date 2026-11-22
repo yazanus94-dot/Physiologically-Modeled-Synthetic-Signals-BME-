@@ -1089,6 +1089,12 @@
     "n_test_unmatched_detections_fp": 1707,
     "n_test_missed_reference_fn": 5106
   },
+  "limitations": {
+    "bounded_by_detector": true,
+    "pooled_detection_sensitivity": 0.9001,
+    "pooled_detection_precision": 0.9642,
+    "explanation": "A beat the detector misses can never be classified, so the end-to-end classification table is bounded above by the detector's sensitivity/precision on the test records, and an unmatched detection can never be correct. Combined with the annotation-centred retrospective upper bound (which uses expert-annotation positions that are unavailable at inference time), the gap between the two tables is confounded: peak positions, RR-feature definitions and label assignment differ simultaneously, so isolating them would need an ablation this project does not run \u2014 recorded as a limitation, not glossed over."
+  },
   "versions": {
     "python": "3.14.7",
     "python_implementation": "CPython",

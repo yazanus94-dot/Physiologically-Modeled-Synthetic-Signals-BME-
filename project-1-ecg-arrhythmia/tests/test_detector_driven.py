@@ -177,6 +177,33 @@ def test_detector_driven_annotations_never_become_feature_columns():
                        for n in names), (cfg, names)
 
 
+def test_matched_features_are_independent_of_label_values():
+    """Leakage guard: annotation/label values never enter the feature
+    matrix — X is a function of ``(signal, detected peaks)`` only.
+
+    Labels are the evaluation target: changing the label values in
+    ``label_rows`` must change ``y`` but never ``X`` or the feature
+    names.  If any annotation-derived column entered ``X`` later, this
+    test would catch it (it compares the full feature matrix and names).
+    """
+    from run_detector_driven import _matched_features
+    rng = np.random.default_rng(1)
+    signal = rng.standard_normal(2000)
+    det = np.array([10, 100, 200, 300, 400, 500, 600, 700])
+    X1, y1, names1, n_un1, n_m1 = _matched_features(
+        signal, det, {j: c for j, c in zip(range(1, len(det) - 1),
+                                           ["N", "V", "S", "N", "V", "S"])},
+        360.0)
+    X2, y2, names2, n_un2, n_m2 = _matched_features(
+        signal, det, {j: c for j, c in zip(range(1, len(det) - 1),
+                                           ["F", "V", "N", "S", "N", "V"])},
+        360.0)
+    assert names1 == names2
+    assert np.array_equal(X1, X2)
+    assert n_un1 == n_un2 and n_m1 == n_m2
+    assert set(y1.tolist()) | set(y2.tolist()) <= set(AAMI_CLASSES)
+
+
 def test_full_feature_config_is_available_and_differs_only_by_rr_columns():
     """Selecting ``annotation_centred_full`` keeps the extra columns that
     the causal configuration drops — the switch really does something."""

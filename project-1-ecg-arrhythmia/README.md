@@ -239,7 +239,11 @@ Detection side, test records only (from `outputs/detector_driven/metrics.json`):
 | Matched detections (TP) | 46,029 |
 | Unmatched detections (FP) | 1,707 |
 | Missed reference beats (FN) | 5,106 |
-| Implied sensitivity / precision | 0.8999 / 0.9646 |
+| Implied sensitivity / precision | 0.9001 / 0.9642 |
+
+The implied values are `TP/(TP+FN)` and `TP/(TP+FP)` on the test
+records; the full bounded-by-detector limitation text is in the
+`limitations` block of `outputs/detector_driven/metrics.json`.
 
 Classification side (test classes: N=41,009, S=1,778, V=2,868, F=374):
 

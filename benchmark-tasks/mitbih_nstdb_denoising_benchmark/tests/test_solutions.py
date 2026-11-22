@@ -59,19 +59,19 @@ def test_reference_matches_expected_results(expected):
 
 def test_reference_scores_higher_than_starter():
     """The reference solution beats the naive starter baseline by a
-    measured margin (audit 2.1).
+    meaningful, strict margin (audit 2.1).
 
-    Measured on the fixed protocol with real PhysioNet data
-    (``expected_results.json``): reference 0.8120 vs starter 0.6443, a
-    gap of **+0.1677**.  Offline synthetic fallback: reference 0.8138 vs
-    starter 0.6562, a gap of **+0.1576**.  The asserted margin (+0.05)
-    is well inside both measured gaps, so the comparison is strict
-    (``>``) rather than the previous non-committal ``>=``.
+    Measured on the fixed protocol at ``segments=2``: real PhysioNet
+    data — reference 0.8123 vs starter 0.6431, gap **+0.1692**;
+    synthetic fallback — reference 0.8138 vs starter 0.6562, gap
+    **+0.1576**.  The asserted margin (+0.10) is meaningful in both
+    modes (the measured gaps are ~1.6x the threshold) and the
+    comparison is strict (``>``).
     """
     ref = evaluate(reference_solution(), segments=2)
     start = evaluate(starter_solution(), segments=2)
     gap = ref["overall_score"] - start["overall_score"]
-    assert gap > 0.05, (f"reference only beats starter by {gap:.4f} "
+    assert gap > 0.10, (f"reference only beats starter by {gap:.4f} "
                         f"({ref['overall_score']} vs "
                         f"{start['overall_score']})")
 
@@ -79,17 +79,17 @@ def test_reference_scores_higher_than_starter():
 def test_reference_beats_starter_on_snr_improvement():
     """The reference denoises better, not just scores better (audit 2.1).
 
-    Mean SNR improvement over the raw noisy input, measured on the fixed
-    protocol: reference **+3.16 dB** vs starter **+2.65 dB** with real
-    data, **+1.27 dB** vs **+1.02 dB** on the synthetic fallback.  The
-    asserted margin (+0.10 dB) holds in both modes and is a property of
-    the denoiser, not of the rubric weights.
+    Mean SNR improvement over the raw noisy input, measured on the
+    fixed protocol at ``segments=2``: real data reference +3.3242 dB
+    vs starter +2.7073 dB (gap **+0.6169 dB**); synthetic fallback
+    reference +1.2701 dB vs starter +1.0205 dB (gap **+0.2496 dB**).
+    The asserted margin (+0.12 dB) is meaningful in both modes.
     """
     ref = evaluate(reference_solution(), segments=2)
     start = evaluate(starter_solution(), segments=2)
     ref_imp = ref["performance_metrics"]["mean_snr_improvement_db"]
     start_imp = start["performance_metrics"]["mean_snr_improvement_db"]
-    assert ref_imp - start_imp > 0.10, (f"reference {ref_imp} dB vs "
+    assert ref_imp - start_imp > 0.12, (f"reference {ref_imp} dB vs "
                                         f"starter {start_imp} dB")
 
 

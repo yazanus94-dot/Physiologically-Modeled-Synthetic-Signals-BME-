@@ -27,7 +27,9 @@ Report (``outputs/detector_driven/metrics.json``):
 - The feature configuration used and the excluded feature names.
 - Classification metrics (balanced accuracy, macro-F1, per-class) on
   matched detections.
-- Combined end-to-end detection + classification limitations.
+- Combined end-to-end detection + classification limitations (the
+  ``limitations`` block: bounded-by-detector sensitivity/precision plus
+  the confounded-gap explanation).
 """
 
 import json
@@ -240,6 +242,35 @@ def run_detector_driven_eval(loader, train_records, val_records, test_records,
                                                   for s in stats_test)),
         "n_test_missed_reference_fn": int(sum(s["n_missed_reference_fn"]
                                               for s in stats_test)),
+    }
+
+    # Combined end-to-end limitations: a beat the detector misses can
+    # never be classified and an unmatched detection can never be
+    # correct, so end-to-end classification is bounded above by the
+    # detector's own sensitivity/precision on the test records.
+    ts = report["test_summary"]
+    tp = ts["n_test_matched"]
+    fn = ts["n_test_missed_reference_fn"]
+    fp = ts["n_test_unmatched_detections_fp"]
+    report["limitations"] = {
+        "bounded_by_detector": True,
+        "pooled_detection_sensitivity": round(tp / (tp + fn), 4)
+            if tp + fn else None,
+        "pooled_detection_precision": round(tp / (tp + fp), 4)
+            if tp + fp else None,
+        "explanation": (
+            "A beat the detector misses can never be classified, so the "
+            "end-to-end classification table is bounded above by the "
+            "detector's sensitivity/precision on the test records, and "
+            "an unmatched detection can never be correct. Combined with "
+            "the annotation-centred retrospective upper bound (which uses "
+            "expert-annotation positions that are unavailable at "
+            "inference time), the gap between the two tables is "
+            "confounded: peak positions, RR-feature definitions and "
+            "label assignment differ simultaneously, so isolating them "
+            "would need an ablation this project does not run — recorded "
+            "as a limitation, not glossed over."
+        ),
     }
 
     for name, cls in (("random_forest", RandomForestClassifier(
