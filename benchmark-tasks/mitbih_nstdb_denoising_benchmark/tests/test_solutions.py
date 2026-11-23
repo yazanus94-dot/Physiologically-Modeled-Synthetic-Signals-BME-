@@ -62,11 +62,10 @@ def test_reference_scores_higher_than_starter():
     meaningful, strict margin (audit 2.1).
 
     Measured on the fixed protocol at ``segments=2``: real PhysioNet
-    data — reference 0.8123 vs starter 0.6431, gap **+0.1692**;
-    synthetic fallback — reference 0.8138 vs starter 0.6562, gap
-    **+0.1576**.  The asserted margin (+0.10) is meaningful in both
-    modes (the measured gaps are ~1.6x the threshold) and the
-    comparison is strict (``>``).
+    data — reference 0.8340 vs starter 0.6392, gap **+0.1948**;
+    synthetic fallback — reference 0.8321 vs starter 0.6639, gap
+    **+0.1682**.  The asserted margin (+0.10) is meaningful in both
+    modes and the comparison is strict (``>``).
     """
     ref = evaluate(reference_solution(), segments=2)
     start = evaluate(starter_solution(), segments=2)
@@ -79,11 +78,12 @@ def test_reference_scores_higher_than_starter():
 def test_reference_beats_starter_on_snr_improvement():
     """The reference denoises better, not just scores better (audit 2.1).
 
-    Mean SNR improvement over the raw noisy input, measured on the
-    fixed protocol at ``segments=2``: real data reference +3.3242 dB
-    vs starter +2.7073 dB (gap **+0.6169 dB**); synthetic fallback
-    reference +1.2701 dB vs starter +1.0205 dB (gap **+0.2496 dB**).
-    The asserted margin (+0.12 dB) is meaningful in both modes.
+    Error-based mean SNR improvement over the raw noisy input, measured
+    on the fixed protocol at ``segments=2``: real data reference
+    +3.5902 dB vs starter +1.8629 dB (gap **+1.7273 dB**); synthetic
+    fallback reference +3.4604 dB vs starter +1.9930 dB (gap
+    **+1.4674 dB**).  The asserted margin (+0.12 dB) is meaningful in
+    both modes.
     """
     ref = evaluate(reference_solution(), segments=2)
     start = evaluate(starter_solution(), segments=2)
@@ -240,19 +240,30 @@ def test_edge_check_rejects_crash_on_short_segment():
     assert res["edge_robustness_ok"] is False, res
 
 
-def test_tolerance_ms_is_propagated_to_rpeak_metrics(monkeypatch):
-    """Passed ``tolerance_ms`` reaches ``rpeak_metrics`` (2.3.3)."""
+def test_tolerance_ms_is_propagated_to_rpeak_metrics():
+    """Passed ``tolerance_ms`` reaches ``rpeak_metrics`` (2.3.3).
+
+    A detection 42 samples (168 ms at 250 Hz) away from the only reference
+    peak is a **miss** at the 150 ms default and a **match** at 200 ms, so
+    the two tolerances must produce different precision/sensitivity
+    (0.0 vs 1.0).  Regression: this test used to assert
+    ``precision <= 1.0``, which is true for every tolerance and therefore
+    proved nothing.
+    """
     from evaluator import _score_performance
     cells = [{"clean": np.arange(1000.0) / 250.0,
               "noisy": np.zeros(1000), "fs": 250.0,
-              "ref_peaks": np.array([100, 200])}]
-    detected = np.array([103])
-    monkeypatch.setattr("evaluator.detect_r_peaks_default",
-                        lambda x, fs: detected.copy())
-    _, perf = _score_performance(cells, [np.arange(1000.0)],
-                                 lambda *a, **k: detected,
-                                 tolerance_ms=200.0)
-    assert perf["mean_rpeak_precision"] <= 1.0
+              "ref_peaks": np.array([100])}]
+    detected = np.array([142])
+    out = [np.arange(1000.0)]
+    tight = _score_performance(cells, out, lambda *a, **k: detected,
+                               tolerance_ms=150.0)[1]
+    loose = _score_performance(cells, out, lambda *a, **k: detected,
+                               tolerance_ms=200.0)[1]
+    assert tight["mean_rpeak_precision"] == 0.0
+    assert tight["mean_rpeak_sensitivity"] == 0.0
+    assert loose["mean_rpeak_precision"] == 1.0
+    assert loose["mean_rpeak_sensitivity"] == 1.0
 
 
 def test_seed_controls_synthetic_generation():
@@ -533,3 +544,57 @@ def test_different_seeds_change_the_real_protocol_cells(monkeypatch):
     evaluate(reference_solution(), segments=1, seed=11)
     evaluate(reference_solution(), segments=1, seed=99)
     assert seen == [11, 99]
+
+
+# ---------------------------------------------------------------------------
+# 2.5 — the SNR definition and the offline generator
+# ---------------------------------------------------------------------------
+
+def test_snr_db_penalises_attenuation():
+    """Attenuating the input must not look like denoising (audit 2.5).
+
+    Regression: ``snr_db`` divided by the power of the *estimate*, so
+    ``snr_db(clean, a * noisy) - snr_db(clean, noisy)`` was exactly
+    ``-20*log10(a)`` for **any** ``a`` — a solution that scaled its input
+    by 0.01 scored +40 dB while removing no noise.  With the error-based
+    definition, shrinking a high-SNR input must instead *lose* SNR, and by
+    a margin far from the old closed form.
+    """
+    from evaluator import snr_db
+    rng = np.random.default_rng(0)
+    t = np.arange(2500) / 250.0
+    clean = np.sin(2 * np.pi * 5 * t)
+    noisy = clean + 0.01 * rng.standard_normal(t.size)   # high input SNR
+    assert snr_db(clean, clean) == float("inf")
+    base = snr_db(clean, noisy)
+    assert base > 20.0, base
+    for scale in (0.5, 0.1, 0.01):
+        imp = snr_db(clean, scale * noisy) - base
+        assert imp < 0.0, (scale, imp)
+        # Not the old estimate-power formula (-20*log10(scale) > 0).
+        assert abs(imp + 20.0 * np.log10(scale)) > 1.0, (scale, imp)
+
+
+def test_synthetic_fallback_is_a_physiological_rhythm():
+    """The offline generator must produce an ECG-like rhythm, not a
+    12 Hz spike train (audit 2.5).
+
+    Regression: each beat index ``k`` contributed a spike train at
+    multiples of its RR interval, so ten trains summed to ≈720 bpm whose
+    energy sat above the 40 Hz diagnostic band.  Every band-limiting
+    denoiser then scored worse than its input in offline mode, so the
+    fallback could not sanity-check the reference.
+    """
+    from evaluator import _synthetic_cell
+    from scipy.signal import find_peaks
+
+    clean, _, fs = _synthetic_cell(7)
+    peaks, _ = find_peaks(clean, height=0.5 * float(clean.max()),
+                          distance=int(0.24 * fs))
+    rate_bpm = peaks.size / (clean.size / fs) * 60.0
+    assert 30.0 <= rate_bpm <= 180.0, rate_bpm
+
+    power = np.abs(np.fft.rfft(clean - clean.mean())) ** 2
+    freqs = np.fft.rfftfreq(clean.size, d=1 / fs)
+    high_share = float(power[freqs > 40.0].sum() / power.sum())
+    assert high_share < 0.05, high_share

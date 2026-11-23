@@ -57,6 +57,10 @@ DEFAULT_SEGMENT_S = 10.0
 #: Worst improvement the performance mapping accepts; also the score given
 #: to a cell whose output is malformed (maps to 0 after clipping).
 PERF_FLOOR_DB = -10.0
+#: Best improvement the performance mapping can use; also the value given
+#: to a mathematically perfect reconstruction (zero error power), whose
+#: SNR improvement is ``+inf``.
+PERF_CEIL_DB = 30.0
 
 
 def _import_optional(name):
@@ -193,18 +197,38 @@ def _load_real_data(records, snrs, segments, seed=DEFAULT_SEED,
 
 
 def _synthetic_cell(seed):
-    """Deterministic synthetic ECG + noise pair for offline evaluation."""
+    """Deterministic synthetic ECG + noise pair for offline evaluation.
+
+    One P-QRS-T-like complex per beat at ~75 bpm with respiratory sinus
+    arrhythmia (the rate varies as a slow sinusoid in the beat index), plus
+    a low-level measurement noise floor.
+
+    Audit 2.5: the previous generator built each beat as
+    ``exp(-((t - k*rr) % rr)**2 / ...)``, i.e. a *spike train at multiples
+    of rr* rather than a single complex at ``k*rr``.  Summing ten such
+    trains produced ~12 beats per second (≈720 bpm) whose energy sat above
+    the 40 Hz diagnostic band, so any sensible band-limiting denoiser
+    looked worse than its input on the offline fallback.  The fallback now
+    generates a physiologically plausible rhythm, which is what the
+    docstring always claimed.
+    """
     rng = np.random.default_rng(seed)
     fs = 250.0
     n = int(DEFAULT_SEGMENT_S * fs)
     t = np.arange(n) / fs
-    # QRS-like morphology: sum of Gaussians at ~5 Hz base rate
     clean = np.zeros(n)
-    for k in range(10):
+    # Start after the window edge and stop before it, so the segment begins
+    # and ends in baseline: a beat truncated by the segment boundary is an
+    # artifact no denoiser can recover and would dominate the offline score.
+    beat_t, k = 0.3, 0
+    while beat_t < t[-1] - 0.5:
         rr = 60.0 / (75.0 + 5 * np.sin(2 * np.pi * (k + 1) / 20.0))
-        q = np.exp(-((t - k * rr) % rr) ** 2 / (2 * 0.05 ** 2))
-        clean += 0.02 * q
-    clean = clean + rng.normal(0, 0.01, n)  # noise-free baseline
+        # Narrow QRS-like spike + broad low-amplitude T wave.
+        clean += 0.9 * np.exp(-((t - beat_t) ** 2) / (2 * 0.012 ** 2))
+        clean += 0.15 * np.exp(-((t - beat_t - 0.25) ** 2) / (2 * 0.05 ** 2))
+        beat_t += rr
+        k += 1
+    clean = clean + rng.normal(0, 0.01, n)  # measurement noise floor
     noise = rng.normal(0, 0.1, n)
     return clean, noise, fs
 
@@ -250,14 +274,37 @@ def zero_mean(x):
 
 
 def snr_db(reference, estimate):
-    """AC (DC-removed) SNR: 10*log10(P_ref / P_est), P = mean(x**2)."""
+    """AC (DC-removed) **reconstruction** SNR in dB.
+
+    ``10 * log10(P_ref / P_err)`` where
+
+    * ``P_ref = mean(zero_mean(reference) ** 2)`` is the signal power,
+    * ``P_err = mean((zero_mean(reference) - zero_mean(estimate)) ** 2)``
+      is the **error** power (the residual the denoiser left behind).
+
+    Audit 2.5: this function used to divide by the power of the *estimate*
+    instead of the error power.  That is not an SNR — under that definition
+    ``improvement = 10*log10(P_noisy / P_estimate)``, so a solution that
+    simply scaled its input down scored as if it had denoised it (scaling
+    by 0.1 earned +20 dB while removing no noise at all).  The error-based
+    definition is the standard one and is also what Project 2 uses
+    (``project-2-ecg-denoising/src/denoise_methods.py::snr_db``).
+
+    Returns ``+inf`` for a perfect reconstruction (zero error power) and
+    ``nan`` when the reference carries no power; ``_score_performance``
+    maps both to a finite score.
+    """
     ref = np.asarray(reference, dtype=float)
     est = np.asarray(estimate, dtype=float)
-    p_ref = float(np.mean(zero_mean(ref) ** 2))
-    p_est = float(np.mean(zero_mean(est) ** 2))
-    if p_ref <= 0 or p_est <= 0:
+    ref_c = zero_mean(ref)
+    est_c = zero_mean(est)
+    p_ref = float(np.mean(ref_c ** 2))
+    p_err = float(np.mean((ref_c - est_c) ** 2))
+    if not (np.isfinite(p_ref) and np.isfinite(p_err)) or p_ref <= 0:
         return float("nan")
-    return float(10 * np.log10(p_ref / p_est))
+    if p_err <= 0:
+        return float("inf")
+    return float(10 * np.log10(p_ref / p_err))
 
 
 def rmse(a, b):
@@ -477,6 +524,11 @@ def _score_performance(cells, out_by_idx, detect_fn,
         if np.isfinite(imp):
             imps.append(imp)
             scored.append(imp)
+        elif np.isposinf(imp):
+            # Perfect reconstruction (zero error power): full credit, and
+            # a finite diagnostic instead of an unrepresentable ``inf``.
+            imps.append(PERF_CEIL_DB)
+            scored.append(PERF_CEIL_DB)
         else:
             scored.append(PERF_FLOOR_DB)
 
@@ -490,9 +542,10 @@ def _score_performance(cells, out_by_idx, detect_fn,
         rpks.append(rpeak_metrics(cell["ref_peaks"], det, cell["fs"],
                                   tolerance_ms=tolerance_ms))
     mean_imp = _mean(imps)
-    # Performance: honest SNR improvement mapped into [0, 1].  Improvement
-    # in [-10, +30] dB -> [0, 1] (clipped).
-    perf = float(np.mean([np.clip((v + 10.0) / 40.0, 0.0, 1.0)
+    # Performance: honest error-reduction ("denoising"), mapped into [0, 1].
+    # Improvement in [PERF_FLOOR_DB, PERF_CEIL_DB] = [-10, +30] dB -> [0, 1].
+    span = PERF_CEIL_DB - PERF_FLOOR_DB
+    perf = float(np.mean([np.clip((v - PERF_FLOOR_DB) / span, 0.0, 1.0)
                           for v in scored])) if scored else 0.0
     return perf, {
         "mean_snr_improvement_db": mean_imp,

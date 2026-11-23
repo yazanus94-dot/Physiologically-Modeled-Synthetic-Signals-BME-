@@ -14,8 +14,11 @@ Scientific notes
   metrics comparable across methods and SNRs.
 - The benchmark mixes clean MIT-BIH ECG with real NSTDB noise at an
   **exactly requested target SNR** (mixer accuracy ~1e-15 dB).  The
-  reported SNR improvement therefore uses the same power-ratio
-  convention as the noise mixer, applied after zero-meaning.
+  input SNR is the mixer's power ratio; the reported **improvement** is
+  the reduction in *reconstruction-error* power (``10*log10(P_signal /
+  P_error)`` before vs after), after zero-meaning.  That is the same
+  error-based convention Project 2 uses, and it is why attenuating the
+  input cannot masquerade as denoising (audit 2.5).
 - Filters are zero-phase (``sosfiltfilt``), matching the reference
   implementation, so denoising introduces no phase distortion.
 """
@@ -55,12 +58,41 @@ def bandpass_filter(x, fs, low=0.5, high=40.0, order=3):
 
     Handles very short input by edge-padding to the minimum length and
     slicing back to the original length.
+
+    Kept as a documented helper (and as Project 2's primary band limiter),
+    but **not** the stage the reference submits: see
+    :func:`lowpass_filter` for why the 0.5 Hz high-pass corner was removed
+    from the benchmark pipeline after the audit measurement.
     """
     x = np.asarray(x, dtype=float)
     orig_n = x.size
     x = _pad_to_min(x)
     sos = butter(order, [low, high], btype="band", fs=fs, output="sos")
     return sosfiltfilt(sos, x)[:orig_n]
+
+
+def lowpass_filter(x, fs, high=40.0, order=3):
+    """Butterworth zero-phase low-pass at ``high`` Hz (default 40 Hz).
+
+    Audit 2.5: the benchmark's clean reference is the **raw** MIT-BIH
+    record (recorded with a 0.1 Hz hardware high-pass), so it still
+    contains real low-frequency ECG content — P/T-wave bodies and the
+    record's own residual baseline.  Applying a 0.5 Hz zero-phase
+    high-pass to a 10 s window deletes part of that content and pays the
+    ``sosfiltfilt`` transient cost over a 2-cycle window.  Measured on the
+    360 real cells with the *correct* (error-based) SNR, running the old
+    ``median → notch → 0.5–40 Hz band-pass`` chain on the **clean** signal
+    (the best any denoiser using that chain could do) reaches only
+    9.03 dB, whereas the same chain ending in this 40 Hz low-pass reaches
+    11.38 dB.  The high-pass corner was therefore removing signal, not
+    noise — the median stage already handles baseline wander.
+    """
+    x = np.asarray(x, dtype=float)
+    orig_n = x.size
+    x = _pad_to_min(x)
+    sos = butter(order, high, btype="low", fs=fs, output="sos")
+    return sosfiltfilt(sos, x)[:orig_n]
+
 
 
 def notch_filter(x, fs, freq=50.0, quality=30.0):
@@ -123,11 +155,19 @@ def fft_soft_threshold(x, fs, keep_band=(0.5, 40.0), threshold_fraction=0.08):
     return np.fft.irfft(magnitude_reduced * np.exp(1j * phase), n)
 
 
-def combined_pipeline(x, fs, powerline_hz=50.0):
-    """The clinical-style chain: median baseline removal → notch → bandpass."""
-    step1 = median_filter_baseline_removal(x, fs)
-    step2 = notch_filter(step1, fs, freq=powerline_hz)
-    return bandpass_filter(step2, fs)
+def combined_pipeline(x, fs, mains_hz=(50.0, 60.0)):
+    """The clinical-style chain: median baseline removal → mains notches →
+    40 Hz low-pass.
+
+    ``mains_hz`` defaults to both standard mains frequencies; a notch is
+    skipped when it would sit at or above Nyquist (e.g. 60 Hz on a 100 Hz
+    record), so the chain stays valid for any sampling rate.
+    """
+    step = median_filter_baseline_removal(x, fs)
+    for f0 in mains_hz:
+        if 0.0 < f0 < 0.5 * fs:
+            step = notch_filter(step, fs, freq=f0)
+    return lowpass_filter(step, fs)
 
 
 # ---------------------------------------------------------------------------
@@ -141,30 +181,37 @@ class DenoisingResult:
 
 
 def denoise(noisy, fs):
-    """The reference pipeline: median baseline removal → 50 Hz notch →
-    0.5–40 Hz band-pass (``combined_pipeline``).
+    """The reference pipeline: median baseline removal → 50/60 Hz notches →
+    40 Hz low-pass (``combined_pipeline``).
 
     Why this chain, measured on the fixed evaluation protocol
     (``evaluator.evaluate(..., segments=10)`` on real MIT-BIH 118/119 +
-    NSTDB ``bw``/``ma``/``em``):
+    NSTDB ``bw``/``ma``/``em`` — 360 cells, error-based SNR):
 
     * **Median baseline removal (0.6 s)** attacks the baseline-wander
-      class directly; a linear high-pass would also remove it but spreads
-      QRS energy and rings on the steepest NSTDB wander.
-    * **50 Hz IIR notch** removes the mains component that sits just
-      above the pass-band, where a 3rd-order band-pass still passes a
-      measurable amount of it.
-    * **0.5–40 Hz Butterworth band-pass** finalises the ECG band.
+      class directly.  A linear 0.5 Hz high-pass also removes wander, but
+      it additionally deletes low-frequency content that belongs to the
+      clean record: measured on the 360 cells with the correct SNR, the
+      chain ending in a 0.5–40 Hz band-pass reaches only **9.03 dB**
+      fidelity when applied to the *clean* signal, versus **11.38 dB**
+      when the same chain ends in the 40 Hz low-pass.  The high-pass was
+      removing signal, not noise (audit 2.5).
+    * **50 Hz and 60 Hz IIR notches** remove mains wherever it appears;
+      they are what earns the signal-processing sub-score, which probes
+      both standard frequencies.
+    * **40 Hz low-pass** removes muscle/electrode high-frequency noise and
+      keeps the diagnostic ECG band intact.
 
-    Result: mean SNR improvement **+3.16 dB** vs **+2.65 dB** for the
-    band-pass-only starter (measured gap **+0.51 dB**, and a strictly
-    higher overall score at every target SNR from −6 dB to +24 dB —
-    see ``expected_results.json``).
+    Result (real data, 360 cells): mean SNR improvement **+3.89 dB** vs
+    **+2.99 dB** for the band-pass-only starter (gap **+0.90 dB**), and
+    an overall score of **0.8366** vs **0.6469** (gap **+0.19**).  The
+    reference is better at every target SNR from −6 dB to +24 dB — see
+    ``expected_results.json``.
     """
-    return combined_pipeline(noisy, fs, powerline_hz=50.0)
+    return combined_pipeline(noisy, fs)
 
 
-METHOD_NAME = "median+notch+bandpass_0.5_40hz"
+METHOD_NAME = "median+notch+lowpass_40hz"
 
 
 def reference_solution():

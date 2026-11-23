@@ -74,7 +74,7 @@ Each project folder is self-contained:
 | 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at −6 dB | **+17.00 dB** (combined +18.21 dB) — records **118, 119** |
 | 2 | NSTDB, 18 noise×SNR cells | bandpass SNR gain at +24 dB | **−6.44 dB** (already-clean cost) |
 | 2 | NSTDB R-peak (bandpass, predefined ±150 ms) | F1 | **0.606** (sens 0.9920 / prec 0.4390) |
-| B | benchmark `mitbih_nstdb_denoising_benchmark` | reference `overall_score` on real data (360 cells) | **0.8120** vs starter **0.6443** (margin +0.1677) |
+| B | benchmark `mitbih_nstdb_denoising_benchmark` | reference `overall_score` on real data (360 cells) | **0.8366** vs starter **0.6469** (margin +0.1897) |
 | 3 | BIDMC (3 records) | mean HR difference, HRV vs PRV | **−0.40 %**, beat agreement 97.3 % |
 | 3 | BIDMC (3 records) | SDNN / RMSSD / LF-HF difference | 75.82 % / 84.58 % / 506.56 % |
 
@@ -111,7 +111,7 @@ cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protoc
 cd project-2-ecg-denoising/src  && python run_real_experiment.py --download                        && cd ../..
 cd project-3-ppg-hrv/src        && python run_bidmc_experiment.py --download                       && cd ../..
 
-# tests (275 total: 154 + 40 + 49 + 32 benchmark)
+# tests (278 total: 155 + 40 + 49 + 34 benchmark)
 pytest project-1-ecg-arrhythmia/tests project-2-ecg-denoising/tests project-3-ppg-hrv/tests benchmark-tasks/mitbih_nstdb_denoising_benchmark/tests
 ```
 

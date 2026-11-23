@@ -27,4 +27,5 @@ test = ["pytest>=7.0", "hypothesis>=6.0"]
 # Each project's tests run in the same process (module names are unique).
 testpaths = ["project-1-ecg-arrhythmia/tests",
              "project-2-ecg-denoising/tests",
-             "project-3-ppg-hrv/tests"]
+             "project-3-ppg-hrv/tests",
+             "benchmark-tasks/mitbih_nstdb_denoising_benchmark/tests"]

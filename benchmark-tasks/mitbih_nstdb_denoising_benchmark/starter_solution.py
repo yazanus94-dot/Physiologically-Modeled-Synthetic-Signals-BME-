@@ -4,10 +4,16 @@ The simplest reasonable solution: a zero-phase Butterworth band-pass
 (0.5–40 Hz) on the noisy segment.  Fast, easy to understand, and a
 plausible "first attempt" — the reference solution in
 ``reference_solution.py`` beats it by adding a **median baseline-removal**
-step and a **50 Hz IIR notch** in front of the same band-pass, which is
-worth **+0.51 dB** of mean SNR improvement and **+0.17** of overall
-score on the fixed protocol (measured +0.5125 dB / +0.1677, see
-``expected_results.json``).
+step and **50/60 Hz notches**, and by using a **40 Hz low-pass** instead
+of the 0.5 Hz high-pass corner: that is worth **+0.90 dB** of mean SNR
+improvement and **+0.19** of overall score on the fixed protocol
+(measured on real data, 360 cells; see ``expected_results.json``).
+
+The starter loses partly because of the **0.5 Hz high-pass corner**: the
+clean MIT-BIH reference still carries real low-frequency ECG content, so
+a zero-phase 0.5 Hz high-pass deletes signal as well as baseline wander
+(measured 10.8 dB fidelity on the clean signal, versus 28.1 dB for the
+40 Hz low-pass alone).
 
 It also fails the evaluator's short-segment edge check, because
 ``sosfiltfilt`` needs more pad length than the 16-sample probe provides.

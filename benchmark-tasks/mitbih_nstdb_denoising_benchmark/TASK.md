@@ -27,8 +27,13 @@ the clean signal from the mixture as well as possible.
      of processing.
 - **Evaluation criteria:** the evaluator in `evaluator.py` computes, per
   (noise category × target SNR):
-  - achieved SNR improvement over the raw noisy signal (dB) — see
-    `snr_improvement_db`,
+  - **error-based** SNR improvement over the raw noisy signal (dB):
+    `10*log10(P_signal / P_error)` before versus after denoising, where
+    `P_error` is the power of `reference - estimate`.  Audit 2.5: the
+    earlier definition divided by the *estimate's* power, which rewarded
+    attenuation instead of denoising (scaling the input by 0.1 scored
+    +20 dB while removing no noise); it now matches Project 2's
+    `snr_db` convention,
   - RMSE / NRMSE between reference and estimate,
   - Pearson correlation,
   - and a **reproducibility digest** of the output array (shape + hash of
@@ -90,7 +95,8 @@ the clean signal from the mixture as well as possible.
   (10 %).
 - **DC-offset convention:** waveform-error metrics (`rmse`, `nrmse`, `prd`,
   `snr_db`) are computed after removing the mean from both signals
-  (`_zero_mean`) — documented in the reference solution.
+  (`zero_mean`) — documented in the reference solution.  `snr_db` uses
+  the **error** power (`reference - estimate`) as its denominator.
 
 ## C. Starter baseline
 
@@ -100,47 +106,73 @@ A straightforward baseline (`starter_solution.py`):
    `sosfiltfilt`, order 3).
 2. Return the filtered signal.
 
-It scores modestly but is easy to understand; the reference solution
-out-performs it by adding a **median baseline-removal** step and a
-**50 Hz IIR notch** in front of the same band-pass:
+The starter scores modestly but is easy to understand; the reference
+solution out-performs it by adding a **median baseline-removal** step and
+**50/60 Hz notches**, and by ending the chain in a **40 Hz low-pass**
+instead of a 0.5 Hz high-pass (the measurement below explains why):
 
 | | reference | starter |
 |---|---:|---:|
-| `overall_score` | **0.8120** | 0.6443 |
-| mean SNR improvement | **+3.16 dB** | +2.65 dB |
-| signal-processing sub-score | **0.9192** | 0.6609 |
+| `overall_score` | **0.8366** | 0.6469 |
+| mean SNR improvement | **+3.89 dB** | +2.99 dB |
+| signal-processing sub-score | **0.9990** | 0.6609 |
 | edge robustness | **1.0** | 0.0 (raises on the 16-sample probe) |
+
+Per target SNR (mean error-based SNR improvement, dB):
+
+| target SNR | −6 | 0 | +6 | +12 | +18 | +24 |
+|---|---:|---:|---:|---:|---:|---:|
+| reference | +10.74 | +8.87 | +6.82 | +3.76 | −0.75 | −6.09 |
+| starter | +8.96 | +8.19 | +6.02 | +2.94 | −1.49 | −6.69 |
 
 Measured with `evaluator.evaluate(..., segments=10)` on the real data
 (see `expected_results.json`); the offline synthetic fallback reproduces
-the same ordering with a +0.158 score gap.  The starter's short-segment
-failure is honest and reproducible: `sosfiltfilt` needs a longer pad
+the same ordering (**+0.168** score, **+1.44 dB** at `segments=10`).
+
+Negative mean improvements at +18/+24 dB are expected and honest: at
+those operating points the clean record's own noise floor dominates the
+measurement, so there is little error left to reduce.  The starter's
+short-segment failure is reproducible: `sosfiltfilt` needs a longer pad
 than the 16-sample edge probe provides.
+
+**Why the 0.5 Hz high-pass corner was removed (audit 2.5).**  The clean
+reference is the raw MIT-BIH record (recorded through a 0.1 Hz hardware
+high-pass), so it still carries real low-frequency ECG content.  Running
+the reference chain on the **clean** signal — the best fidelity any
+denoiser built from that chain could reach — gives **9.04 dB** with the
+0.5–40 Hz band-pass but **11.38 dB** with the 40 Hz low-pass.  The
+high-pass corner was deleting signal, not noise; under the old
+(estimate-power) SNR definition that loss was invisible.
 
 ## D. Reference solution
 
-`reference_solution.py`: a complete, documented implementation mirroring
-the primary denoising pipeline of Project 2 (`project-2-ecg-denoising`),
-including:
+`reference_solution.py`: a complete, documented implementation that
+mirrors the chain of Project 2 (`project-2-ecg-denoising`) — median
+baseline removal → mains notch → band limiting — with the band limiter
+being a 40 Hz low-pass (see section C for the measurement that justifies
+dropping the 0.5 Hz high-pass corner).  It includes:
 
 - `bandpass_filter` (Butterworth 0.5–40 Hz, order 3, zero-phase via
-  `sosfiltfilt`),
+  `sosfiltfilt`) — kept as a documented helper and as Project 2's band
+  limiter, but **not** the stage the benchmark reference submits,
+- `lowpass_filter` (Butterworth 40 Hz, order 3, zero-phase),
 - `median_filter_baseline_removal` (median window 0.6 s),
-- `notch_filter` (IIR notch, default 50 Hz),
+- `notch_filter` (IIR notch, default 50 Hz; the chain applies both 50 Hz
+  and 60 Hz, skipping any that would sit at or above Nyquist),
 - `fft_soft_threshold` (FFT-domain soft-threshold: out-of-band bins
   zeroed, in-band magnitudes shrunk by `0.08 * max|magnitude|` with the
   phase preserved),
-- `combined_pipeline` (median → notch → bandpass).
+- `combined_pipeline` (median → 50/60 Hz notches → 40 Hz low-pass).
 
 **What the reference actually runs.**  `denoise(noisy, fs)` **is**
-`combined_pipeline(noisy, fs, powerline_hz=50.0)` — median baseline
-removal → 50 Hz notch → 0.5–40 Hz band-pass.  `fft_soft_threshold` is
-provided as a documented, tested *alternative* stage (it is exercised by
-the module's own helpers and is what Project 2's `fft` method uses), but
-it is **not** part of the default pipeline; on this protocol it scores
-below the combined chain (measured overall 0.7446 vs 0.8123 — the
-combined chain reaches higher SNR gain *and* a higher overall score, so
-it is the better submission; it is not what the reference submits).
+`combined_pipeline(noisy, fs)` — median baseline removal → 50 Hz and
+60 Hz notches → 40 Hz low-pass.  `fft_soft_threshold` is provided as a
+documented, tested *alternative* stage (it is exercised by the module's
+own helpers and is what Project 2's `fft` method uses), but it is **not**
+part of the default pipeline: on this protocol it scores below the
+submitted chain (measured overall 0.8229 vs 0.8366) — it removes mains
+perfectly but its performance sub-score is much lower (0.2918 vs 0.3473)
+because zeroing out-of-band bins is a fixed, non-adaptive rule.
 
 Each stage is documented with its parameter choices and the scientific
 rationale.  The reference implementation returns a `DenoisingResult`
@@ -168,7 +200,8 @@ Returns a dict with:
 - `sub_scores` — the six rubric sub-scores in [0, 1]
   (`structure`, `numerical_validity`, `signal_processing`,
   `performance`, `reproducibility`, `edge_robustness`),
-- `performance_metrics` — diagnostics: `mean_snr_improvement_db`,
+- `performance_metrics` — diagnostics: `mean_snr_improvement_db`
+  (**error-based** improvement),
   `mean_rmse`, `mean_nrmse`, `mean_prd`, `mean_pearson`,
   `mean_rpeak_sensitivity` / `mean_rpeak_precision` / `mean_rpeak_f1`
   (F1 is **diagnostic only** — it is not in `SCORING_RUBRIC`),
@@ -199,14 +232,16 @@ tests do this too).
 
 ## F. Tests and failure cases
 
-`tests/test_solutions.py` (30 tests) contains:
+`tests/test_solutions.py` (**32 test functions, 34 collected cases**)
+contains:
 
 - **Success cases:** `reference_solution` on the evaluator → structure
   ok, finite outputs, `overall_score` within 0.05 of
   `expected_results.json` (protocol fields asserted in *both* modes, so
   CI without data still catches spec drift); `reference` beats
-  `starter` by a measured margin (**> +0.05** overall, **> +0.10 dB**
-  mean SNR improvement — measured +0.1677 / +0.62 dB on real data);
+  `starter` by a measured margin (**> +0.10** overall, **> +0.12 dB**
+  mean SNR improvement — measured +0.1948 / +1.73 dB on real data at
+  `segments=2`, and +0.1682 / +1.47 dB on the offline fallback);
   `reference_solution` is deterministic.
 - **Failure cases:**
   - Solution that returns a **constant** signal → `structure_ok` False,
@@ -221,8 +256,13 @@ tests do this too).
 - **Protocol/evaluator regressions:** `data_dir` honoured when the
   default directory is empty; loader directory constants restored
   after an override; `seed` reaches the real-data loader; `tolerance_ms`
-  reaches `rpeak_metrics`; F1 stays diagnostic-only; provenance block
-  complete.
+  reaches `rpeak_metrics` (checked with a 168 ms offset that is a miss at
+  150 ms and a match at 200 ms); F1 stays diagnostic-only; provenance
+  block complete.
+- **Metric-definition regressions (audit 2.5):** `snr_db` is error-based,
+  so attenuating a high-SNR input loses SNR instead of scoring the old
+  `-20*log10(scale)` reward; the offline synthetic generator produces a
+  physiological rate (30–180 bpm) with < 5 % of its energy above 40 Hz.
 - **Edge cases:** very short segment (16 samples), zero-power input
   (graceful, no crash), short/zero inputs to the reference solution.
 
@@ -232,8 +272,8 @@ tests do this too).
 |---|---:|---|
 | Output structure | 15% | finite, 1-D, same shape, non-degenerate, `structure_ok=True` |
 | Numerical validity | 10% | no NaN/Inf, no shape mismatch, sensible values |
-| Signal-processing correctness | 25% | bandpass attenuates 50/60 Hz well; morphology preserved; energy concentrated in 0.5–40 Hz |
-| Performance metrics | 25% | average SNR improvement, RMSE, NRMSE, PRD across cells — higher is better (scored by improving the mean) |
+| Signal-processing correctness | 25% | notches + low-pass attenuate controlled 50 Hz and 60 Hz probe tones; morphology preserved; output band-limited to the diagnostic 40 Hz |
+| Performance metrics | 25% | average **error-based** SNR improvement, RMSE, NRMSE, PRD across cells — higher is better (scored by improving the mean) |
 | Reproducibility | 15% | deterministic output for fixed seed |
 | Edge-case robustness | 10% | graceful handling of short segments, zero-power inputs, constant signals |
 
@@ -257,16 +297,17 @@ python -m pytest benchmark-tasks/mitbih_nstdb_denoising_benchmark/tests
 ```
 
 Key reference values (means over 360 cells, reference pipeline
-median → 50 Hz notch → 0.5–40 Hz band-pass):
+median → 50/60 Hz notches → 40 Hz low-pass):
 
-- **`overall_score` = 0.8120** (structure 1.0, numerical validity 1.0,
-  signal processing 0.9192, performance 0.3290, reproducibility 1.0,
+- **`overall_score` = 0.8366** (structure 1.0, numerical validity 1.0,
+  signal processing 0.9990, performance 0.3473, reproducibility 1.0,
   edge robustness 1.0).
-- Mean SNR improvement **+3.16 dB** vs **+2.65 dB** for the starter;
-  the reference is strictly better at *every* target SNR from −6 dB to
-  +24 dB, and better at every SNR in mean SNR improvement too.
-- Starter `overall_score` = 0.6443 (edge robustness 0.0: `sosfiltfilt`
-  raises on the 16-sample edge probe) → margin **+0.1677**.
+- Mean error-based SNR improvement **+3.89 dB** vs **+2.99 dB** for the
+  starter; the reference is strictly better at *every* target SNR from
+  −6 dB to +24 dB (see the per-SNR table in section C).
+- Starter `overall_score` = 0.6469 (edge robustness 0.0: `sosfiltfilt`
+  raises on the 16-sample edge probe) → margin **+0.1897**.
 - Offline synthetic fallback reproduces the same ordering with a
-  +0.158 score gap (score assertions against the real-data JSON skip in
-  that mode; protocol assertions still run).
+  **+0.1675** score gap and **+1.44 dB** at `segments=10` (score
+  assertions against the real-data JSON skip in that mode; protocol
+  assertions still run).
