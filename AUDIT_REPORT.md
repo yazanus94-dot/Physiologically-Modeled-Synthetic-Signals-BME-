@@ -294,9 +294,9 @@ reported in the handover message.
 
 - Raw PhysioNet data (MIT-BIH, NSTDB, BIDMC) stays git-ignored:
   `git check-ignore data/physionet` → `.gitignore:26:data/`.
-- No machine-specific paths in any tracked file (`git grep` for
-  `C:\Users` is empty); committed `data_dir` values are relative
-  (`data/physionet/bidmc`).
+- No machine-specific paths in any tracked file (a repo-wide search for
+  absolute Windows user paths is empty); committed `data_dir` values are
+  relative (`data/physionet/bidmc`).
 - No raw `.dat`/`.hea`/`.atr` files are tracked.
 - Committer identity: `yazanus94-dot <yazanus94-dot@users.noreply.github.com>`.
 - Local scratch measurements (`candidate_bench*.py`, `rerun_benchmark_audit.*`,
