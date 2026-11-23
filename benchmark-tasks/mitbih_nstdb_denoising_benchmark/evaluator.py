@@ -273,6 +273,36 @@ def zero_mean(x):
     return x - x.mean()
 
 
+def unwrap_output(result):
+    """Extract the signal array from a solution's ``denoise`` return value.
+
+    The documented contract is an object with a ``signal`` attribute, but a
+    bare ``ndarray`` (or any array-like) is accepted too.  **Every** path
+    that inspects solution output goes through this helper: the main
+    evaluation loop, the 50/60 Hz probe scoring, the edge-robustness checks
+    and the reproducibility digest.
+
+    Regression (audit 2.6): the probe and edge checks used to read
+    ``result.signal`` directly, so a bare-ndarray solution raised
+    ``AttributeError`` inside both; the exception was swallowed and the
+    solution scored ``signal_processing = 0.0`` and
+    ``edge_robustness = 0.0`` — 0.35 of the rubric lost purely for its
+    return type, with a valid waveform in hand.
+    """
+    return np.asarray(getattr(result, "signal", result), dtype=float)
+
+
+def _as_1d(x):
+    """Coerce ``x`` to a non-empty 1-D float array, else return ``None``."""
+    try:
+        a = np.asarray(x, dtype=float)
+    except (TypeError, ValueError):
+        return None
+    if a.ndim != 1 or a.size == 0:
+        return None
+    return a
+
+
 def snr_db(reference, estimate):
     """AC (DC-removed) **reconstruction** SNR in dB.
 
@@ -291,11 +321,19 @@ def snr_db(reference, estimate):
     (``project-2-ecg-denoising/src/denoise_methods.py::snr_db``).
 
     Returns ``+inf`` for a perfect reconstruction (zero error power) and
-    ``nan`` when the reference carries no power; ``_score_performance``
-    maps both to a finite score.
+    ``nan`` whenever the value is undefined — including empty input,
+    shape-mismatched input, non-1-D input (the benchmark's contract is a
+    1-D segment), and NaN/Inf samples.  Returning ``nan`` rather than
+    raising keeps the caller's finite-score mapping in charge.
     """
-    ref = np.asarray(reference, dtype=float)
-    est = np.asarray(estimate, dtype=float)
+    ref = _as_1d(reference)
+    est = _as_1d(estimate)
+    if ref is None or est is None or ref.size != est.size:
+        return float("nan")
+    if not (np.all(np.isfinite(ref)) and np.all(np.isfinite(est))):
+        # Undefined: a single NaN/Inf sample has no meaningful error power
+        # (and ``inf - inf`` would only emit a numpy warning).
+        return float("nan")
     ref_c = zero_mean(ref)
     est_c = zero_mean(est)
     p_ref = float(np.mean(ref_c ** 2))
@@ -477,7 +515,7 @@ def _score_signal_processing(noisy, out, fs, solution):
         mixed = noisy[:n] + probe
         try:
             res = solution.denoise(mixed, fs)
-            out_p = np.asarray(res.signal, dtype=float)
+            out_p = unwrap_output(res)
         except Exception:  # noqa: BLE001
             return 0.0
         in_p = _bin_pwr(mixed, f0)
@@ -630,8 +668,7 @@ def evaluate(solution, records=None, snrs=None, segments=DEFAULT_SEGMENTS,
     sp_scores = []
     for cell in cells:
         res = solution.denoise(cell["noisy"], cell["fs"])
-        out = res.signal if hasattr(res, "signal") else res
-        out = np.asarray(out, dtype=float)
+        out = unwrap_output(res)
         # ``expected_ptp`` makes the structure check reject flat/near-flat
         # outputs, which is what lets us withhold performance and
         # signal-processing credit from them (audit 2.3.8).
@@ -655,18 +692,17 @@ def evaluate(solution, records=None, snrs=None, segments=DEFAULT_SEGMENTS,
         sp = 0.0
 
     # Reproducibility: run twice on the first cell and compare digests.
-    # (Audit: uses the same "object with .signal, or a bare ndarray"
-    # unwrapping as the main loop, so a plain-array solution cannot crash
-    # here, and exposes the digest so TASK.md section A's promise holds.)
+    # (Uses the same shared ``unwrap_output`` as every other path, so a
+    # plain-array solution cannot crash here, and exposes the digest so
+    # TASK.md section A's promise holds.)
     first_cell = cells[0] if cells else None
     repro_ok = True
     repro_digest = None
     if first_cell is not None:
-        def _unwrap(res):
-            return np.asarray(res.signal if hasattr(res, "signal") else res,
-                              dtype=float)
-        r1 = _unwrap(solution.denoise(first_cell["noisy"], first_cell["fs"]))
-        r2 = _unwrap(solution.denoise(first_cell["noisy"], first_cell["fs"]))
+        r1 = unwrap_output(
+            solution.denoise(first_cell["noisy"], first_cell["fs"]))
+        r2 = unwrap_output(
+            solution.denoise(first_cell["noisy"], first_cell["fs"]))
         repro_digest = _digest(r1)
         repro_ok = bool(repro_digest == _digest(r2))
 
@@ -674,17 +710,17 @@ def evaluate(solution, records=None, snrs=None, segments=DEFAULT_SEGMENTS,
     # return a finite output of the correct shape on a short segment and on
     # zero-power input.  (A degenerate constant output is acceptable on
     # degenerate input — what matters is shape/finiteness, not SNR there.)
+    # Uses ``unwrap_output`` so a bare-ndarray solution is judged on what it
+    # returned, not on how it returned it (audit 2.6).
     edge_ok = True
     try:
         if cells:
             short = np.zeros(16, dtype=float)
-            o = solution.denoise(short, 250.0)
-            s = np.asarray(o.signal, dtype=float)
+            s = unwrap_output(solution.denoise(short, 250.0))
             edge_ok = edge_ok and (s.size == short.size
                                    and np.all(np.isfinite(s)))
             zero = np.zeros(int(5 * cells[0]["fs"]), dtype=float)
-            o = solution.denoise(zero, cells[0]["fs"])
-            z = np.asarray(o.signal, dtype=float)
+            z = unwrap_output(solution.denoise(zero, cells[0]["fs"]))
             edge_ok = edge_ok and (z.size == zero.size
                                    and np.all(np.isfinite(z)))
     except Exception:  # noqa: BLE001

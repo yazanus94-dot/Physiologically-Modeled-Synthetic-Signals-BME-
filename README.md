@@ -3,7 +3,8 @@
 ## 👋 Overview
 
 A portfolio of three practice projects on physiological signal
-processing with Python:
+processing with Python, plus one independent benchmark package that
+evaluates a denoising task on real PhysioNet data:
 
 1. **ECG arrhythmia beat classification** — synthetic ECG generating
    Normal / PVC / Supraventricular beats, a from-scratch Pan-Tompkins-style
@@ -20,6 +21,14 @@ processing with Python:
    and time- and frequency-domain HRV estimation — plus the same pipeline
    run on the **real BIDMC PPG and Respiration Dataset**, comparing
    ECG-derived HRV against PPG-derived PRV.
+
+Separately, **`benchmark-tasks/`** is not a project but an independent,
+self-contained PhysioNet-style benchmark (`mitbih_nstdb_denoising_benchmark`):
+a fixed evaluation protocol (TASK.md), a starter solution, a reference
+solution, an automated evaluator, regression tests, and committed
+`expected_results.json` on real MIT-BIH/NSTDB data. It exists to check
+the portfolio's denoising work against an external, reproducible standard
+rather than to showcase a fourth project.
 
 Every project keeps its synthetic and real results **separate and
 labelled**. Synthetic numbers come from seeded generators; real numbers

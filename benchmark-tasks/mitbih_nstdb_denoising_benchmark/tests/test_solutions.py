@@ -9,6 +9,7 @@ input, noisy/short signals and edge conditions.
 import json
 import os
 import sys
+import warnings
 
 import numpy as np
 import pytest
@@ -162,6 +163,22 @@ class _BareArray:
         return np.asarray(noisy, dtype=float) * 0.9
 
 
+class _BareArrayLowpass:
+    """Bare-ndarray solution that really filters, so probe scores matter.
+
+    The 20 Hz cutoff is deliberately far below the 50/60 Hz probes, so the
+    probe sub-score is saturated whenever the probes actually execute.
+    """
+
+    def denoise(self, noisy, fs):
+        from scipy.signal import butter, sosfiltfilt
+        x = np.asarray(noisy, dtype=float)
+        if x.size < 64:            # too short for zero-phase filtering
+            return x.copy()
+        sos = butter(4, 20.0, btype="low", fs=fs, output="sos")
+        return sosfiltfilt(sos, x)
+
+
 def test_bare_ndarray_solution_does_not_crash():
     """A solution returning a plain array must be scored, not raise.
 
@@ -172,6 +189,30 @@ def test_bare_ndarray_solution_does_not_crash():
     assert np.isfinite(res["overall_score"])
     assert res["reproducibility_ok"] is True
     assert res["reproducibility_digest"]
+    # Audit 2.6: the edge checks must judge the returned array, not its
+    # container.  They used to read ``result.signal`` and swallow the
+    # resulting AttributeError into ``edge_robustness = 0.0``.
+    assert res["sub_scores"]["edge_robustness"] == 1.0, res["sub_scores"]
+    assert res["edge_robustness_ok"] is True
+    # A passthrough still carries the injected 50/60 Hz tones, so its probe
+    # score must stay low — which is what makes the companion test below
+    # meaningful (a *high* probe score is only reachable if the probes
+    # actually ran on the bare array).
+    assert res["sub_scores"]["signal_processing"] < 0.5, res["sub_scores"]
+
+
+def test_bare_ndarray_solution_gets_signal_processing_credit():
+    """The 50/60 Hz probes must run on a bare-ndarray output (audit 2.6).
+
+    Same return type as above, but with a real 20 Hz low-pass: the probe
+    score must approach its ceiling.  Under the old direct ``result.signal``
+    access this was 0.0 whatever the filtering did, because the probe call
+    raised and the exception was swallowed."""
+    res = evaluate(_BareArrayLowpass(), segments=1)
+    assert res["sub_scores"]["signal_processing"] > 0.9, res["sub_scores"]
+    assert res["sub_scores"]["edge_robustness"] == 1.0, res["sub_scores"]
+    assert res["reproducibility_ok"] is True
+    assert np.isfinite(res["overall_score"])
 
 
 def test_synthetic_fallback_mode_runs_offline():
@@ -573,6 +614,62 @@ def test_snr_db_penalises_attenuation():
         assert imp < 0.0, (scale, imp)
         # Not the old estimate-power formula (-20*log10(scale) > 0).
         assert abs(imp + 20.0 * np.log10(scale)) > 1.0, (scale, imp)
+
+
+def test_unwrap_output_accepts_both_return_types():
+    """The shared output-unwrapping helper is the single contract point.
+
+    Audit 2.6: the main loop, the 50/60 Hz probes, the edge checks and the
+    reproducibility digest must all see the same array for the same return
+    value, whether a solution wraps it in ``.signal`` or returns it bare.
+    """
+    from evaluator import unwrap_output
+
+    class Wrapped:
+        signal = np.array([1.0, 2.0, 3.0])
+
+    expected = np.array([1.0, 2.0, 3.0])
+    for value in (Wrapped(), expected, [1.0, 2.0, 3.0]):
+        got = unwrap_output(value)
+        assert isinstance(got, np.ndarray) and got.dtype == float
+        assert np.array_equal(got, expected), got
+
+
+def test_snr_db_is_defined_for_degenerate_inputs():
+    """``snr_db`` must be total: ``nan``, never an exception (audit 2.6).
+
+    The metric is called once per cell by the evaluator and directly by
+    tests, so every undefined input has to map to ``nan`` instead of
+    raising or relying on a numpy broadcast error.  ``+inf`` is reserved
+    for the one meaningful extreme: zero error power (perfect
+    reconstruction).
+    """
+    from evaluator import snr_db
+
+    x = np.sin(np.linspace(0.0, 6.28, 64))
+
+    # Empty input: previously raised a RuntimeWarning through ``mean``.
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        assert np.isnan(snr_db(np.array([]), np.array([])))
+        assert np.isnan(snr_db([], []))
+    # Shape mismatch: previously raised a broadcasting ValueError.
+    assert np.isnan(snr_db(x, x[:-1]))
+    assert np.isnan(snr_db(x[:-1], x))
+    # Non-1-D input: the benchmark's contract is a 1-D segment.
+    assert np.isnan(snr_db(x.reshape(8, 8), x.reshape(8, 8)))
+    assert np.isnan(snr_db(np.array(1.0), np.array(1.0)))
+    assert np.isnan(snr_db(np.zeros((0, 3)), np.zeros((0, 3))))
+    # NaN / Inf samples: a single bad sample poisons the metric.
+    nan_ref = x.copy(); nan_ref[7] = np.nan
+    inf_ref = x.copy(); inf_ref[7] = np.inf
+    for ref, est in ((nan_ref, x), (x, nan_ref), (inf_ref, x), (x, inf_ref)):
+        assert np.isnan(snr_db(ref, est)), (ref[7], est[7])
+    # Zero-power reference has no SNR to report.
+    assert np.isnan(snr_db(np.zeros(64), x))
+    # A well-formed pair still returns a number, and a perfect copy is inf.
+    assert np.isfinite(snr_db(x, x + 0.1 * np.cos(np.arange(64))))
+    assert snr_db(x, x.copy()) == float("inf")
 
 
 def test_synthetic_fallback_is_a_physiological_rhythm():

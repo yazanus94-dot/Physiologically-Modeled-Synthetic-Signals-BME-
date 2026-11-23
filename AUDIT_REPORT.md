@@ -337,3 +337,45 @@ reported in the handover message.
 - **Offline fallback is synthetic.** CI has no PhysioNet data, so its strict
   margin tests run on the synthetic rhythm; the real-data numbers require the
   local data tree and are recorded in `expected_results.json`.
+
+---
+
+## 12. Follow-up round (audit 2.6) — evaluator output handling and docs
+
+Requested items, all closed:
+
+1. **Shared output-unwrapping helper** — `evaluator.unwrap_output(result)`
+   is now the single place that converts a solution's return value into a
+   float array. The main loop, the 50/60 Hz probe scoring, the
+   edge-robustness checks and the reproducibility digest all use it.
+   *Bug fixed:* the probe scoring read `result.signal` directly, so a
+   solution returning a bare ndarray raised `AttributeError` inside a
+   swallowed `try` and was silently awarded
+   `sub_scores.signal_processing = 0.0` regardless of its waveform; the
+   edge checks had the same defect and awarded `edge_robustness = 0.0`.
+   That is 0.35 of the rubric lost purely for the return type.
+2. **Bare-array regression strengthened** —
+   `test_bare_ndarray_solution_does_not_crash` now asserts edge robustness
+   and a low probe score for a passthrough array, and a new
+   `test_bare_ndarray_solution_gets_signal_processing_credit` proves a
+   bare array from a genuine 20 Hz low-pass scores near the probe ceiling.
+   A direct `unwrap_output` test covers both return types.
+3. **Direct SNR validation** —
+   `test_snr_db_is_defined_for_degenerate_inputs` covers empty input,
+   shape mismatch, multidimensional and scalar input, NaN, Inf and
+   zero-power references. `snr_db` now returns `nan` for all of these
+   instead of raising a broadcast `ValueError` or emitting a numpy
+   `RuntimeWarning`, and reserves `+inf` for zero error power.
+4. **Root README introduction** — now describes three biomedical projects
+   *plus one independent benchmark package*, and explains why the
+   benchmark is not a fourth project.
+
+**Protocol and results unchanged:** the real-data digest is still
+`378277c6ad59c338d8ea6911e7d5a512f2eac60f88d1acac3c51b8bc08c5f2c2`,
+`overall_score` 0.8366, 360 cells, identical sub-scores. No
+`expected_results.json` regeneration was needed.
+
+**Validation:** 281 passed locally (was 278; three new tests), Ruff exit 0;
+benchmark suite in forced-offline mode 36 passed + 1 skipped (the
+real-data score assertion). CI result and commit SHA are reported in the
+handover message.
