@@ -140,10 +140,13 @@ def load_real_mitbih_record(data_path, record_name="100", ann_ext="atr"):
     """
     import wfdb  # optional dependency, not required for the synthetic pipeline
 
+    from aami import BEAT_SYMBOLS
+
     record = wfdb.rdrecord(os.path.join(data_path, record_name))
     ann = wfdb.rdann(os.path.join(data_path, record_name), ann_ext)
     signal = record.p_signal[:, 0]  # channel 0 = MLII, the usual analysis lead
     fs = record.fs
-    symbols = set(ann.symbol)
-    symbol_ok = [i for i, s in enumerate(ann.symbol) if s in symbols]
+    # Set-membership against ann.symbol's own values is a no-op: rhythm
+    # markers and quality flags would be returned as if they were beats.
+    symbol_ok = [i for i, s in enumerate(ann.symbol) if s in BEAT_SYMBOLS]
     return signal, ann.sample[symbol_ok], [ann.symbol[i] for i in symbol_ok], fs

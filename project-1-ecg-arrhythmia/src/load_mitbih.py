@@ -249,11 +249,11 @@ class MITBIHLoader:
         return {
             "record_name": record_name,
             "fs": record.fs,
-            "n_samples": record.n_sig,
+            "n_samples": int(record.sig_len),
             "channels": record.sig_name,
             "n_annotations": len(ann.sample),
             "annotation_symbols": list(set(ann.symbol)),
-            "duration_s": record.n_sig / record.fs
+            "duration_s": record.sig_len / record.fs
         }
 
 

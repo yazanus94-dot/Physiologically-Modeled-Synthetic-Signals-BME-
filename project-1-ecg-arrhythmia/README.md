@@ -320,3 +320,15 @@ project-1-ecg-arrhythmia/
 > Moody, G. B., & Mark, R. G. (2001). The impact of the MIT-BIH Arrhythmia
 > Database. *IEEE Engineering in Medicine and Biology Magazine*, 20(3),
 > 45–50. https://doi.org/10.1109/51.932724
+
+## Reproducibility note (2026-11-24)
+
+The `r_amp_rel` feature now reads the R-peak position of the annotation-centred
+beat window (`round(0.25 * fs)`) instead of the window's geometric centre,
+which was ~100 ms after R. This is a scientific correction, not a tuning
+change. The committed real MIT-BIH metric files in `outputs/mitbih/` were
+generated **before** this correction and have not been regenerated: the raw
+records are not present in this workspace and downloading them requires
+explicit approval. Re-run `make mitbih` after obtaining the licensed dataset
+to refresh those artefacts. Synthetic unit and integration tests were rerun
+and pass with the corrected feature.

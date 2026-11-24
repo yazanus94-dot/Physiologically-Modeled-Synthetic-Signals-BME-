@@ -444,7 +444,8 @@ def extract_features_from_beats(
     beats: np.ndarray,
     r_peaks: np.ndarray,
     fs: float,
-    labels: Optional[List[str]] = None
+    labels: Optional[List[str]] = None,
+    pre_window_s: float = 0.25,
 ) -> Tuple[np.ndarray, list]:
     """
     Extract features from pre-segmented beats (annotation-centered).
@@ -505,9 +506,12 @@ def extract_features_from_beats(
         beat_skew = float(skew(seg_centered, nan_policy="omit"))
         beat_kurt = float(kurtosis(seg_centered, nan_policy="omit"))
 
-        # R-peak relative amplitude (center of window)
-        center_idx = len(beat) // 2
-        r_amp_rel = float(seg_centered[center_idx])
+        # R-peak relative amplitude at the annotation-centred window position.
+        # The geometric centre of a 0.25 s pre / 0.45 s post window is ~100 ms
+        # AFTER R, i.e. in the ST/T region; using it silently measures a
+        # different physiological quantity.
+        r_index = min(len(seg_centered) - 1, int(round(pre_window_s * fs)))
+        r_amp_rel = float(seg_centered[r_index])
 
         X.append([amp, width, energy, beat_mean, beat_std,
                   beat_var, beat_skew, beat_kurt, r_amp_rel])

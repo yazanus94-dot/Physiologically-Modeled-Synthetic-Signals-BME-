@@ -104,7 +104,9 @@ def _matched_features(signal, det_peaks, label_rows, fs):
 
     n_det = det_peaks.size
     # Detections (by index) with no label:
-    n_unmatched = int(sum(1 for j in range(1, n_det) if j not in label_rows))
+    # Only j in 1..n_det-2 are classified (boundary detections are excluded),
+    # so the diagnostic must not count the final detection as an FP.
+    n_unmatched = int(sum(1 for j in range(1, n_det - 1) if j not in label_rows))
 
     X, y = [], []
     for j in range(1, n_det - 1):
