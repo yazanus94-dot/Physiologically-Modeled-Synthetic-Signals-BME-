@@ -321,6 +321,13 @@ project-1-ecg-arrhythmia/
 > Database. *IEEE Engineering in Medicine and Biology Magazine*, 20(3),
 > 45–50. https://doi.org/10.1109/51.932724
 
+## Result provenance — READ FIRST
+
+The real MIT-BIH metric files in `outputs/mitbih/` were generated **before** the corrected
+`r_amp_rel` feature and are marked **STALE**. See
+[RESULTS_STATUS.md](RESULTS_STATUS.md) for the current/stale register and exact regeneration
+commands. Synthetic results are current. No dataset was downloaded for the audit.
+
 ## Reproducibility note (2026-11-24)
 
 The `r_amp_rel` feature now reads the R-peak position of the annotation-centred
