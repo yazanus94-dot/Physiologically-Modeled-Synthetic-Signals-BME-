@@ -120,7 +120,7 @@ cd project-1-ecg-arrhythmia/src && python run_pipeline.py --mode mitbih --protoc
 cd project-2-ecg-denoising/src  && python run_real_experiment.py --download                        && cd ../..
 cd project-3-ppg-hrv/src        && python run_bidmc_experiment.py --download                       && cd ../..
 
-# tests (278 total: 155 + 40 + 49 + 34 benchmark)
+# tests (latest verified run: 285 passed; includes 4 scientific-regression tests)
 pytest project-1-ecg-arrhythmia/tests project-2-ecg-denoising/tests project-3-ppg-hrv/tests benchmark-tasks/mitbih_nstdb_denoising_benchmark/tests
 ```
 
